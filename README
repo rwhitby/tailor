@@ -26,7 +26,7 @@ lvreduce new_size /dev/mapper/store-media
 
 mount /media/internal
 
-pkill -SIGUSR1 cryptofs
+pkill -SIGUSR2 cryptofs
 
 return
 
