@@ -33,9 +33,11 @@ return
 
 create_new_partition:
 
-lvcreate --L Size --name ext3fs store
+lvcreate -L Size --name ext3fs store
 
 mke2fs -j /dev/mapper/store-ext3fs
+
+mkdir /media/ext3fs
 
 modify /etc/fstab
 
