@@ -20,9 +20,9 @@ pkill -SIGUSR1 cryptofs
 
 umount /media/internal
 
-fatresize /media/internal new_size
+resizefat -v /dev/mapper/store-media new_size
 
-lvreduce new_size /dev/mapper/store-media
+lvreduce -L new_size /dev/mapper/store-media
 
 mount /media/internal
 
@@ -36,6 +36,8 @@ create_new_partition:
 lvcreate -L Size --name ext3fs store
 
 mke2fs -j /dev/mapper/store-ext3fs
+
+tune2fs -i 0 /dev/mapper/store-ext3fs
 
 mkdir /media/ext3fs
 
