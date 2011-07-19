@@ -1,11 +1,11 @@
 #!/bin/sh
 
-# $1 is requested size of ext3fs partitio0n
+# $1 is requested size of ext3fs partition
+# $2 is freespace
 
-#pvscan (and search for free space on the PV)
 
 if [freespace > requested space]
-   lvcreate -L $1 --name ext3fs store
+   lvcreate -L $1G --name ext3fs store
 else
    echo 'not enough space on device'
    exit 1
