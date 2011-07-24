@@ -678,6 +678,50 @@ bool mount_ext3fs_method(LSHandle* lshandle, LSMessage *message, void *ctx) {
   return false;
 }
 
+//
+// Run command to unmount the optware partition.
+//
+bool unmount_optware_method(LSHandle* lshandle, LSMessage *message, void *ctx) {
+  LSError lserror;
+  LSErrorInit(&lserror);
+
+  // Local buffer to store the command
+  char command[MAXLINLEN];
+
+  // Store the command, so it can be used in the error report if necessary
+  sprintf(command, "/sbin/stop org.webosinternals.optware 2>&1");
+  
+  return simple_command(message, command);
+
+ error:
+  LSErrorPrint(&lserror, stderr);
+  LSErrorFree(&lserror);
+ end:
+  return false;
+}
+
+//
+// Run command to mount the optware partition.
+//
+bool mount_optware_method(LSHandle* lshandle, LSMessage *message, void *ctx) {
+  LSError lserror;
+  LSErrorInit(&lserror);
+
+  // Local buffer to store the command
+  char command[MAXLINLEN];
+
+  // Store the command, so it can be used in the error report if necessary
+  sprintf(command, "/sbin/start org.webosinternals.optware 2>&1");
+  
+  return simple_command(message, command);
+
+ error:
+  LSErrorPrint(&lserror, stderr);
+  LSErrorFree(&lserror);
+ end:
+  return false;
+}
+
 LSMethod luna_methods[] = {
   { "status",		dummy_method },
   { "version",		version_method },
@@ -688,6 +732,8 @@ LSMethod luna_methods[] = {
   { "mountMedia",	mount_media_method },
   { "unmountExt3fs",	unmount_ext3fs_method },
   { "mountExt3fs",	mount_ext3fs_method },
+  { "unmountOptware",	unmount_optware_method },
+  { "mountOptware",	mount_optware_method },
   { 0, 0 }
 };
 

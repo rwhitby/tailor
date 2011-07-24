@@ -51,6 +51,11 @@ function MainAssistant()
 		disabled: true
 	};
 
+	this.optwareMountButtonModel = {
+		label: $L("Unmount Optware"),
+		disabled: true
+	};
+
 	this.totalSpace = 0;
 	this.freeSpace = 0;
 	this.peSize = 0;
@@ -95,6 +100,7 @@ MainAssistant.prototype.setup = function()
 
 	this.mediaMountButton  = this.controller.get('mediaMountButton');
 	this.ext3fsMountButton = this.controller.get('ext3fsMountButton');
+	this.optwareMountButton = this.controller.get('optwareMountButton');
 
 	this.statusTitle = 		this.controller.get('statusTitle');
 	this.status = 			this.controller.get('status');
@@ -118,6 +124,8 @@ MainAssistant.prototype.setup = function()
 	this.mediaMountHandler = this.mediaMount.bindAsEventListener(this);
 	this.ext3fsMountTapHandler = this.ext3fsMountTap.bindAsEventListener(this);
 	this.ext3fsMountHandler = this.ext3fsMount.bindAsEventListener(this);
+	this.optwareMountTapHandler = this.optwareMountTap.bindAsEventListener(this);
+	this.optwareMountHandler = this.optwareMount.bindAsEventListener(this);
 
 	// setup widgets
 	this.spinnerModel = {spinning: true};
@@ -150,6 +158,8 @@ MainAssistant.prototype.setup = function()
 	this.controller.listen(this.mediaMountButton, Mojo.Event.tap, this.mediaMountTapHandler);
 	this.controller.setupWidget('ext3fsMountButton', { type: Mojo.Widget.activityButton }, this.ext3fsMountButtonModel);
 	this.controller.listen(this.ext3fsMountButton, Mojo.Event.tap, this.ext3fsMountTapHandler);
+	this.controller.setupWidget('optwareMountButton', { type: Mojo.Widget.activityButton }, this.optwareMountButtonModel);
+	this.controller.listen(this.optwareMountButton, Mojo.Event.tap, this.optwareMountTapHandler);
 
     this.controller.setupWidget('mountList', {
 			itemTemplate: "main/rowTemplate", swipeToDelete: false, reorderable: false }, this.mountsModel);
@@ -181,6 +191,7 @@ MainAssistant.prototype.refresh = function()
 	this.controller.modelChanged(this.resizeButtonModel);
 	this.mountPoints = {
 		"/media/internal": false,
+		"/opt": false,
 		"/media/ext3fs": false
 	}
 	this.mountsModel.items = [];
@@ -188,6 +199,8 @@ MainAssistant.prototype.refresh = function()
 	this.controller.modelChanged(this.mediaMountButtonModel);
 	this.ext3fsMountButtonModel.disabled = true;
 	this.controller.modelChanged(this.ext3fsMountButtonModel);
+	this.optwareMountButtonModel.disabled = true;
+	this.controller.modelChanged(this.optwareMountButtonModel);
 	this.request = TailorService.listGroups(this.listGroupsHandler);
 };
 
@@ -273,6 +286,12 @@ MainAssistant.prototype.listMounts = function(payload)
 		this.controller.modelChanged(this.ext3fsMountButtonModel);
 	}
 
+	if (this.partitionSizes["ext3fs"]) {
+		this.optwareMountButtonModel.label = $L("Mount Optware");
+		this.optwareMountButtonModel.disabled = false;
+		this.controller.modelChanged(this.optwareMountButtonModel);
+	}
+
 	if (payload.stdOut && payload.stdOut.length > 0) {
 		for (var a = 0; a < payload.stdOut.length; a++) {
 			var line = payload.stdOut[a];
@@ -296,6 +315,12 @@ MainAssistant.prototype.listMounts = function(payload)
 						this.ext3fsMountButtonModel.label = $L("Unmount Ext3fs");
 						this.ext3fsMountButtonModel.disabled = false;
 						this.controller.modelChanged(this.ext3fsMountButtonModel);
+					}
+					if ((mountPoint == "/opt") && this.partitionSizes["ext3fs"]) {
+						this.mountPoints[mountPoint] = mountSource;
+						this.optwareMountButtonModel.label = $L("Unmount Optware");
+						this.optwareMountButtonModel.disabled = false;
+						this.controller.modelChanged(this.optwareMountButtonModel);
 					}
 				}
 			}
@@ -416,6 +441,26 @@ MainAssistant.prototype.ext3fsMount = function(payload)
 	this.refresh();
 };
 
+MainAssistant.prototype.optwareMountTap = function(event)
+{
+	if (this.mountPoints["/opt"]) {
+		this.request = TailorService.unmountOptware(this.optwareMountHandler);
+	}
+	else {
+		this.request = TailorService.mountOptware(this.optwareMountHandler);
+	}
+};
+
+MainAssistant.prototype.optwareMount = function(payload)
+{
+	if (payload.returnValue === false) {
+		this.errorMessage('<b>Service Error (optwareMount):</b><br>'+payload.errorText);
+	}
+
+	this.optwareMountButton.mojo.deactivate();
+	this.refresh();
+};
+
 MainAssistant.prototype.getRandomSubTitle = function()
 {
 	// loop to get total weight value
@@ -500,6 +545,7 @@ MainAssistant.prototype.cleanup = function(event)
 	this.controller.stopListening(this.resizeButton,  Mojo.Event.tap, this.resizeTapHandler);
 	this.controller.stopListening(this.mediaMountButton,  Mojo.Event.tap, this.mediaMountTapHandler);
 	this.controller.stopListening(this.ext3fsMountButton,  Mojo.Event.tap, this.ext3fsMountTapHandler);
+	this.controller.stopListening(this.optwareMountButton,  Mojo.Event.tap, this.optwareMountTapHandler);
 };
 
 // Local Variables:

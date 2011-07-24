@@ -83,6 +83,28 @@ TailorService.mountExt3fs = function(callback)
     return request;
 };
 
+TailorService.unmountOptware = function(callback)
+{
+    var request = new Mojo.Service.Request(TailorService.identifier,
+	{
+	    method: 'unmountOptware',
+	    onSuccess: callback,
+	    onFailure: callback
+	});
+    return request;
+};
+
+TailorService.mountOptware = function(callback)
+{
+    var request = new Mojo.Service.Request(TailorService.identifier,
+	{
+	    method: 'mountOptware',
+	    onSuccess: callback,
+	    onFailure: callback
+	});
+    return request;
+};
+
 // Local Variables:
 // tab-width: 4
 // End:
