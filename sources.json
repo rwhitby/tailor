@@ -1,0 +1,23 @@
+[
+    {"source": "app/models/service.js"},
+    {"source": "app/models/utility.js"},
+    {"source": "app/models/help.js"},
+    {"source": "app/models/cookies.js"},
+    {"source": "app/assistants/app-assistant.js"},
+    {
+        "scenes": "startup",
+        "source": "app/assistants/startup-assistant.js"
+    },
+    {
+        "scenes": "main",
+        "source": "app/assistants/main-assistant.js"
+    },
+    {
+        "scenes": "preferences",
+        "source": "app/assistants/preferences-assistant.js"
+    },
+    {
+        "scenes": "help",
+        "source": "app/assistants/help-assistant.js"
+    }
+]

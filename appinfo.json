@@ -1,0 +1,16 @@
+{
+	"title": "Tailor",
+	"id": "org.webosinternals.tailor",
+	"version": "0.0.1",
+	"release_date":	"24-July-2011",
+	"vendor": "WebOS Internals",
+	"vendor_email":	"support@webos-internals.org",
+	"vendor_url": "http://www.webos-internals.org/wiki/Application:Tailor",
+	"type": "web",
+	"main": "index.html",
+	"icon": "icon.png",
+	"removable": "true",
+	"noWindow": true,
+	"uiRevision": 2,
+	"noDeprecatedStyles": true 
+}

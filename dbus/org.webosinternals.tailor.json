@@ -1,0 +1,14 @@
+{
+  "role": {
+     "exeName":"/var/usr/sbin/org.webosinternals.tailor",
+     "type": "privileged",
+     "allowedNames": ["org.webosinternals.tailor"]
+  },
+  "permissions": [
+    {
+      "service":"org.webosinternals.tailor",
+      "inbound":["*"],
+      "outbound":["*"]
+    }
+  ]
+}

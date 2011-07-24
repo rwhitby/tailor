@@ -1,0 +1,7 @@
+description "Tailor Service"
+
+start on stopped finish
+
+exec /var/usr/sbin/org.webosinternals.tailor
+
+respawn

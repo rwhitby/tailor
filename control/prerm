@@ -1,0 +1,26 @@
+#!/bin/sh
+
+SID="org.webosinternals.tailor"
+
+APPS=/media/cryptofs/apps
+
+[ -d $APPS ] || { echo "Requires webOS 1.3.5 or later" ; exit 1 ; }
+
+# Remove the executable
+rm -f /var/usr/sbin/${SID}
+
+# Remove the dbus service
+rm -f /var/palm/system-services/${SID}.service
+
+# Remove the ls2 roles
+rm -f /var/palm/ls2/roles/prv/${SID}.json
+rm -f /var/palm/ls2/roles/pub/${SID}.json
+
+# Stop the service if running
+/sbin/stop ${SID} || true
+/usr/bin/killall -9 ${SID} || true
+
+# Remove the upstart script
+rm -f /var/palm/event.d/${SID}
+
+exit 0

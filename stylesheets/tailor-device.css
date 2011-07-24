@@ -1,0 +1,22 @@
+/*
+ * No gesture, TouchPad
+ */
+body.no-gesture
+{
+	
+}
+body.no-gesture .palm-page-header > .header-icon,
+body.no-gesture .palm-page-header .icon
+{
+	background-image: url(../images/ui-revision-2/back-flat.png);
+}
+
+
+body.no-gesture .palm-divider.labeled .right
+{
+	background-image: url(../images/ui-revision-2/palm-divider-line.png);
+}
+body.no-gesture.palm-dark .palm-divider.labeled .right
+{
+	background-image: url(../images/ui-revision-2/palm-divider-line-dark.png);
+}
