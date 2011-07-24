@@ -260,10 +260,10 @@ MainAssistant.prototype.resizeTap = function(event)
 	var value = this.newValueModel.value;
 
 	if (value < this.partitionSizes[name]) {
-		this.status.innerHTML = "Reduced to "+this.showValue(value, "MB");
+		this.status.innerHTML = "Reducing to "+this.showValue(value, "MB");
 	}
 	else if (value > this.partitionSizes[name]) {
-		this.status.innerHTML = "Extended to "+this.showValue(value, "MB");
+		this.status.innerHTML = "Extending to "+this.showValue(value, "MB");
 	}
 	else {
 		this.status.innerHTML = "Unchanged at "+this.showValue(value, "MB");
