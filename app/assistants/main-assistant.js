@@ -73,6 +73,7 @@ MainAssistant.prototype.setup = function()
 
 	this.listElement =		this.controller.get('mainList');
 
+	this.newSizeTitle =		this.controller.get('newSizeTitle');
 	this.newNameElement =	this.controller.get('newName');
 	this.newValueElement =	this.controller.get('newValue');
 	this.resizeButton =		this.controller.get('resizeButton');
@@ -88,6 +89,7 @@ MainAssistant.prototype.setup = function()
 	// setup handlers
 	this.listGroupsHandler = this.listGroups.bindAsEventListener(this);
 	this.listVolumesHandler = this.listVolumes.bindAsEventListener(this);
+	this.volumeTappedHandler = this.volumeTapped.bindAsEventListener(this);
 	this.newNameChangedHandler =  this.newNameChanged.bindAsEventListener(this);
 	this.newValueChangedHandler =  this.newValueChanged.bindAsEventListener(this);
 	this.resizeTapHandler = this.resizeTap.bindAsEventListener(this);
@@ -98,6 +100,7 @@ MainAssistant.prototype.setup = function()
 
     this.controller.setupWidget('mainList', {
 			itemTemplate: "main/rowTemplate", swipeToDelete: false, reorderable: false }, this.mainModel);
+	this.controller.listen(this.listElement, Mojo.Event.listTap, this.volumeTappedHandler);
 
 	this.controller.setupWidget('newName', { label: "Partition" }, this.newNameModel);
 	this.controller.listen(this.newNameElement, Mojo.Event.propertyChange, this.newNameChangedHandler);
@@ -157,10 +160,6 @@ MainAssistant.prototype.listGroups = function(payload)
 				this.totalSpace = fields[11];
 				this.peSize = fields[12] / 1024;
 				this.freeSpace = fields[15] * this.peSize;
-				this.mainModel.items.push({label: "Total Flash Storage:", title: this.showValue(this.totalSpace, "MB"), labelClass: 'left', titleClass: 'right'});
-				if (this.freeSpace) {
-					this.mainModel.items.push({label: "Unallocated Space:", title: this.showValue(this.freeSpace, "MB"), labelClass: 'left', titleClass: 'right'});
-				}
 			}
 		}
 	}
@@ -185,7 +184,7 @@ MainAssistant.prototype.listVolumes = function(payload)
 				var name = trim(fields[0]).split("/")[3];
 				if (this.partitionNames[name]) {
 					this.partitionSizes[name] = size;
-					this.mainModel.items.push({label: this.partitionNames[name]+" Partition:", title: this.showValue(size, "MB"), labelClass: 'left', titleClass: 'right'});
+					this.mainModel.items.push({label: this.partitionNames[name]+" Partition:", title: this.showValue(size, "MB"), name: name, labelClass: 'left', titleClass: 'right'});
 				}
 			}
 		}
@@ -202,9 +201,16 @@ MainAssistant.prototype.listVolumes = function(payload)
 	this.newNameModel.disabled = false;
 	this.controller.modelChanged(this.newNameModel);
 
-	this.newNameChanged({value:this.newNameModel.choices[0].value})
+	this.newNameChanged({value:this.newNameModel.choices[0].value});
 
 	this.overlay.hide();
+};
+
+MainAssistant.prototype.volumeTapped = function(event)
+{
+	this.newNameModel.value = this.partitionNames[event.item.name];
+	this.controller.modelChanged(this.newNameModel);
+	this.newNameChanged({value:event.item.name});
 };
 
 MainAssistant.prototype.newNameChanged = function(event)
@@ -221,20 +227,28 @@ MainAssistant.prototype.newNameChanged = function(event)
 
 MainAssistant.prototype.newValueChanged = function(event)
 {
-	this.resizeValue = event.value;
+	this.resizeValue = event.value || 0;
 
-	if ((event.value == '') || (event.value == this.partitionSizes[this.resizeName])) {
-		this.status.innerHTML = "Select partition and new size";
+	var newFreeSpace = this.partitionSizes[this.resizeName] - this.resizeValue + this.freeSpace;
+	if (newFreeSpace >= 0) {
+		this.newSizeTitle.innerHTML = "Partition Sizing ("+newFreeSpace + " MB free)";
+	}
+	else {
+		this.newSizeTitle.innerHTML = "Partition Sizing (No free space)";
+	}
+	
+	if ((this.resizeValue == 0) || (this.resizeValue == this.partitionSizes[this.resizeName])) {
+		this.status.innerHTML = "Select partition and new size ...";
 		this.resizeButtonModel.disabled = true;
 		this.controller.modelChanged(this.resizeButtonModel);
 	}
-	else if (event.value > (this.partitionSizes[this.resizeName] + this.freeSpace)) {
-		this.status.innerHTML = "Not enough free space";
+	else if (newFreeSpace < 0) {
+		this.status.innerHTML = "Not enough free space!";
 		this.resizeButtonModel.disabled = true;
 		this.controller.modelChanged(this.resizeButtonModel);
 	}
 	else {
-		this.status.innerHTML = "Tap 'Resize Partition' to begin";
+		this.status.innerHTML = "Tap 'Resize Partition' to begin.";
 		this.resizeButtonModel.disabled = false;
 		this.controller.modelChanged(this.resizeButtonModel);
 	}
@@ -288,7 +302,7 @@ MainAssistant.prototype.getRandomSubTitle = function()
 
 MainAssistant.prototype.showValue = function(value, units)
 {
-	while (value > 1024) {
+	while ((value > 1024) || (value < -1024)) {
 		value = value / 1024;
 		switch (units) {
 		case "B": units = "kB"; break;
@@ -340,6 +354,7 @@ MainAssistant.prototype.handleCommand = function(event)
 
 MainAssistant.prototype.cleanup = function(event)
 {
+	this.controller.stopListening(this.listElement, Mojo.Event.listTap, this.volumeTappedHandler);
 	this.controller.stopListening(this.newNameElement, Mojo.Event.propertyChange, this.newNameChangedHandler);
 	this.controller.stopListening(this.newValueElement, Mojo.Event.propertyChange, this.newValueChangedHandler);
 	this.controller.stopListening(this.resizeButton,  Mojo.Event.tap, this.resizeTapHandler);
