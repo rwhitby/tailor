@@ -5,7 +5,7 @@
 {
 	width: 76px;
 	height: 75px;
-	background: url(../icon.png) center center no-repeat;
+	background: url(../icon.png) center center no-repeat !important;
 }
 .main .palm-page-header-wrapper .title
 {

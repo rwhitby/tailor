@@ -568,11 +568,126 @@ bool list_volumes_method(LSHandle* lshandle, LSMessage *message, void *ctx) {
   return false;
 }
 
+//
+// Run command to get current mounts.
+//
+bool list_mounts_method(LSHandle* lshandle, LSMessage *message, void *ctx) {
+  LSError lserror;
+  LSErrorInit(&lserror);
+
+  // Local buffer to store the command
+  char command[MAXLINLEN];
+
+  // Store the command, so it can be used in the error report if necessary
+  sprintf(command, "cat /proc/mounts 2>&1");
+  
+  return simple_command(message, command);
+
+ error:
+  LSErrorPrint(&lserror, stderr);
+  LSErrorFree(&lserror);
+ end:
+  return false;
+}
+
+//
+// Run command to unmount the media partition.
+//
+bool unmount_media_method(LSHandle* lshandle, LSMessage *message, void *ctx) {
+  LSError lserror;
+  LSErrorInit(&lserror);
+
+  // Local buffer to store the command
+  char command[MAXLINLEN];
+
+  // Store the command, so it can be used in the error report if necessary
+  sprintf(command, "( /usr/bin/pkill -SIGUSR1 cryptofs && /bin/umount /media/internal ) 2>&1");
+  
+  return simple_command(message, command);
+
+ error:
+  LSErrorPrint(&lserror, stderr);
+  LSErrorFree(&lserror);
+ end:
+  return false;
+}
+
+//
+// Run command to mount the media partition.
+//
+bool mount_media_method(LSHandle* lshandle, LSMessage *message, void *ctx) {
+  LSError lserror;
+  LSErrorInit(&lserror);
+
+  // Local buffer to store the command
+  char command[MAXLINLEN];
+
+  // Store the command, so it can be used in the error report if necessary
+  sprintf(command, "( /bin/mount /media/internal && /usr/bin/pkill -SIGUSR2 cryptofs ) 2>&1");
+  
+  return simple_command(message, command);
+
+ error:
+  LSErrorPrint(&lserror, stderr);
+  LSErrorFree(&lserror);
+ end:
+  return false;
+}
+
+//
+// Run command to unmount the ext3fs partition.
+//
+bool unmount_ext3fs_method(LSHandle* lshandle, LSMessage *message, void *ctx) {
+  LSError lserror;
+  LSErrorInit(&lserror);
+
+  // Local buffer to store the command
+  char command[MAXLINLEN];
+
+  // Store the command, so it can be used in the error report if necessary
+  sprintf(command, "/bin/umount /media/ext3fs 2>&1");
+  
+  return simple_command(message, command);
+
+ error:
+  LSErrorPrint(&lserror, stderr);
+  LSErrorFree(&lserror);
+ end:
+  return false;
+}
+
+//
+// Run command to mount the ext3fs partition.
+//
+bool mount_ext3fs_method(LSHandle* lshandle, LSMessage *message, void *ctx) {
+  LSError lserror;
+  LSErrorInit(&lserror);
+
+  // Local buffer to store the command
+  char command[MAXLINLEN];
+
+  // Store the command, so it can be used in the error report if necessary
+  sprintf(command, "/bin/mount /media/ext3fs 2>&1");
+  
+  return simple_command(message, command);
+
+ error:
+  LSErrorPrint(&lserror, stderr);
+  LSErrorFree(&lserror);
+ end:
+  return false;
+}
+
 LSMethod luna_methods[] = {
   { "status",		dummy_method },
   { "version",		version_method },
   { "listGroups",	list_groups_method },
   { "listVolumes",	list_volumes_method },
+  { "listMounts",	list_mounts_method },
+  { "unmountMedia",	unmount_media_method },
+  { "mountMedia",	mount_media_method },
+  { "unmountExt3fs",	unmount_ext3fs_method },
+  { "mountExt3fs",	mount_ext3fs_method },
   { 0, 0 }
 };
 

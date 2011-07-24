@@ -26,8 +26,8 @@ function MainAssistant()
 				]
 	};
 
-	// setup list model
-	this.mainModel = {items:[]};
+	// setup volumes model
+	this.volumesModel = {items:[]};
 	
 	this.newNameModel = { choices: [], disabled: true };
 
@@ -38,16 +38,23 @@ function MainAssistant()
 		disabled: true
 	};
 
+	// setup mounts model
+	this.mountsModel = {items:[]};
+	
+	this.mediaMountButtonModel = {
+		label: $L("Unmount Media"),
+		disabled: true
+	};
+
+	this.ext3fsMountButtonModel = {
+		label: $L("Unmount Ext3fs"),
+		disabled: true
+	};
+
 	this.totalSpace = 0;
 	this.freeSpace = 0;
 	this.peSize = 0;
 	this.resizeName = false;
-	this.partitionSizes = {
-		"media":"0",
-		"swap":"0",
-		"ext3fs":"0",
-		"foo":"0"
-	};
 
 	this.partitionNames = {
 		"media":"USB (media)",
@@ -55,6 +62,14 @@ function MainAssistant()
 		"ext3fs":"User (ext3)",
 		"foo":"Foo (foo)"
 	};
+
+	this.mountNames = {
+		"/dev/mapper/store-media":"USB (media)",
+		"/dev/mapper/store-ext3fs":"User (ext3)"
+	};
+
+	this.partitionSizes = false;
+	this.mountPoints = false;
 };
 
 MainAssistant.prototype.setup = function()
@@ -71,16 +86,21 @@ MainAssistant.prototype.setup = function()
 	this.overlay = 			this.controller.get('overlay'); this.overlay.hide();
 	this.spinnerElement = 	this.controller.get('spinner');
 
-	this.listElement =		this.controller.get('mainList');
+	this.volumeList =		this.controller.get('volumeList');
 
-	this.newSizeTitle =		this.controller.get('newSizeTitle');
-	this.newNameElement =	this.controller.get('newName');
-	this.newValueElement =	this.controller.get('newValue');
+	this.newNameList =		this.controller.get('newNameList');
+	this.newValueLabel =	this.controller.get('newValueLabel');
+	this.newValueField =	this.controller.get('newValueField');
 	this.resizeButton =		this.controller.get('resizeButton');
+
+	this.mediaMountButton  = this.controller.get('mediaMountButton');
+	this.ext3fsMountButton = this.controller.get('ext3fsMountButton');
 
 	this.statusTitle = 		this.controller.get('statusTitle');
 	this.status = 			this.controller.get('status');
 	
+	this.mountList =		this.controller.get('mountList');
+
 	// set version string random subtitle
 	this.titleElement.innerHTML = Mojo.Controller.appInfo.title;
 	this.versionElement.innerHTML = "v" + Mojo.Controller.appInfo.version;
@@ -93,18 +113,23 @@ MainAssistant.prototype.setup = function()
 	this.newNameChangedHandler =  this.newNameChanged.bindAsEventListener(this);
 	this.newValueChangedHandler =  this.newValueChanged.bindAsEventListener(this);
 	this.resizeTapHandler = this.resizeTap.bindAsEventListener(this);
+	this.listMountsHandler = this.listMounts.bindAsEventListener(this);
+	this.mediaMountTapHandler = this.mediaMountTap.bindAsEventListener(this);
+	this.mediaMountHandler = this.mediaMount.bindAsEventListener(this);
+	this.ext3fsMountTapHandler = this.ext3fsMountTap.bindAsEventListener(this);
+	this.ext3fsMountHandler = this.ext3fsMount.bindAsEventListener(this);
 
 	// setup widgets
 	this.spinnerModel = {spinning: true};
 	this.controller.setupWidget('spinner', {spinnerSize: 'large'}, this.spinnerModel);
 
-    this.controller.setupWidget('mainList', {
-			itemTemplate: "main/rowTemplate", swipeToDelete: false, reorderable: false }, this.mainModel);
-	this.controller.listen(this.listElement, Mojo.Event.listTap, this.volumeTappedHandler);
+    this.controller.setupWidget('volumeList', {
+			itemTemplate: "main/rowTemplate", swipeToDelete: false, reorderable: false }, this.volumesModel);
+	this.controller.listen(this.volumeList, Mojo.Event.listTap, this.volumeTappedHandler);
 
-	this.controller.setupWidget('newName', { label: "Partition" }, this.newNameModel);
-	this.controller.listen(this.newNameElement, Mojo.Event.propertyChange, this.newNameChangedHandler);
-	this.controller.setupWidget('newValue', {
+	this.controller.setupWidget('newNameList', { label: "Partition" }, this.newNameModel);
+	this.controller.listen(this.newNameList, Mojo.Event.propertyChange, this.newNameChangedHandler);
+	this.controller.setupWidget('newValueField', {
 			autoFocus: false,
 				autoReplace: false,
 				// hintText: 'Enter new partition size ...',
@@ -118,9 +143,16 @@ MainAssistant.prototype.setup = function()
 				charsAllow: this.onlyNumbers.bind(this)
 				},
 		this.newValueModel);
-	this.controller.listen(this.newValueElement, Mojo.Event.propertyChange, this.newValueChangedHandler);
+	this.controller.listen(this.newValueField, Mojo.Event.propertyChange, this.newValueChangedHandler);
 	this.controller.setupWidget('resizeButton', { type: Mojo.Widget.activityButton }, this.resizeButtonModel);
 	this.controller.listen(this.resizeButton, Mojo.Event.tap, this.resizeTapHandler);
+	this.controller.setupWidget('mediaMountButton', { type: Mojo.Widget.activityButton }, this.mediaMountButtonModel);
+	this.controller.listen(this.mediaMountButton, Mojo.Event.tap, this.mediaMountTapHandler);
+	this.controller.setupWidget('ext3fsMountButton', { type: Mojo.Widget.activityButton }, this.ext3fsMountButtonModel);
+	this.controller.listen(this.ext3fsMountButton, Mojo.Event.tap, this.ext3fsMountTapHandler);
+
+    this.controller.setupWidget('mountList', {
+			itemTemplate: "main/rowTemplate", swipeToDelete: false, reorderable: false }, this.mountsModel);
 
 };
 
@@ -132,7 +164,13 @@ MainAssistant.prototype.activate = function()
 MainAssistant.prototype.refresh = function()
 {
 	this.overlay.show();
-	this.mainModel.items = [];
+	this.partitionSizes = {
+		"media":"0",
+		"swap":"0",
+		"ext3fs":"0",
+		"foo":"0"
+	};
+	this.volumesModel.items = [];
 	this.statusTitle.innerHTML = "Partition Status";
 	this.status.innerHTML = "Reading partition sizes ...";
 	this.newNameModel.disabled = true;
@@ -141,6 +179,15 @@ MainAssistant.prototype.refresh = function()
 	this.controller.modelChanged(this.newValueModel);
 	this.resizeButtonModel.disabled = true;
 	this.controller.modelChanged(this.resizeButtonModel);
+	this.mountPoints = {
+		"/media/internal": false,
+		"/media/ext3fs": false
+	}
+	this.mountsModel.items = [];
+	this.mediaMountButtonModel.disabled = true;
+	this.controller.modelChanged(this.mediaMountButtonModel);
+	this.ext3fsMountButtonModel.disabled = true;
+	this.controller.modelChanged(this.ext3fsMountButtonModel);
 	this.request = TailorService.listGroups(this.listGroupsHandler);
 };
 
@@ -184,14 +231,14 @@ MainAssistant.prototype.listVolumes = function(payload)
 				var name = trim(fields[0]).split("/")[3];
 				if (this.partitionNames[name]) {
 					this.partitionSizes[name] = size;
-					this.mainModel.items.push({label: this.partitionNames[name]+" Partition:", title: this.showValue(size, "MB"), name: name, labelClass: 'left', titleClass: 'right'});
+					this.volumesModel.items.push({label: this.partitionNames[name]+" Partition:", title: this.showValue(size, "MiB"), name: name, labelClass: 'left', titleClass: 'right'});
 				}
 			}
 		}
 	}
 
-	this.listElement.mojo.noticeUpdatedItems(0, this.mainModel.items);
-	this.listElement.mojo.setLength(this.mainModel.items.length);
+	this.volumeList.mojo.noticeUpdatedItems(0, this.volumesModel.items);
+	this.volumeList.mojo.setLength(this.volumesModel.items.length);
 
 	this.newNameModel.choices = [];
 	for (var f in this.partitionSizes) {
@@ -202,6 +249,61 @@ MainAssistant.prototype.listVolumes = function(payload)
 	this.controller.modelChanged(this.newNameModel);
 
 	this.newNameChanged({value:this.newNameModel.choices[0].value});
+
+	this.request = TailorService.listMounts(this.listMountsHandler);
+};
+
+MainAssistant.prototype.listMounts = function(payload)
+{
+	if (payload.returnValue === false) {
+		this.errorMessage('<b>Service Error (listMounts):</b><br>'+payload.errorText);
+		this.overlay.hide();
+		return;
+	}
+
+	if (this.partitionSizes["media"]) {
+		this.mediaMountButtonModel.label = $L("Mount Media");
+		this.mediaMountButtonModel.disabled = false;
+		this.controller.modelChanged(this.mediaMountButtonModel);
+	}
+
+	if (this.partitionSizes["ext3fs"]) {
+		this.ext3fsMountButtonModel.label = $L("Mount Ext3fs");
+		this.ext3fsMountButtonModel.disabled = false;
+		this.controller.modelChanged(this.ext3fsMountButtonModel);
+	}
+
+	if (payload.stdOut && payload.stdOut.length > 0) {
+		for (var a = 0; a < payload.stdOut.length; a++) {
+			var line = payload.stdOut[a];
+			var fields = line.split(" ");
+			if (fields.length == 6) {
+				var mountSource = trim(fields[0]);
+				var mountPoint = trim(fields[1]);
+				var mountType = trim(fields[2]);
+				if ((mountType == "ext3") || (mountType == "vfat")) {
+					if (this.mountNames[mountSource]) {
+						this.mountsModel.items.push({label: this.mountNames[mountSource], title: mountPoint, labelClass: 'left', titleClass: 'right'});
+					}
+					if ((mountPoint == "/media/internal") && this.partitionSizes["media"]) {
+						this.mountPoints[mountPoint] = mountSource;
+						this.mediaMountButtonModel.label = $L("Unmount Media");
+						this.mediaMountButtonModel.disabled = false;
+						this.controller.modelChanged(this.mediaMountButtonModel);
+					}
+					if ((mountPoint == "/media/ext3fs") && this.partitionSizes["ext3fs"]) {
+						this.mountPoints[mountPoint] = mountSource;
+						this.ext3fsMountButtonModel.label = $L("Unmount Ext3fs");
+						this.ext3fsMountButtonModel.disabled = false;
+						this.controller.modelChanged(this.ext3fsMountButtonModel);
+					}
+				}
+			}
+		}
+	}
+
+	this.mountList.mojo.noticeUpdatedItems(0, this.mountsModel.items);
+	this.mountList.mojo.setLength(this.mountsModel.items.length);
 
 	this.overlay.hide();
 };
@@ -231,10 +333,10 @@ MainAssistant.prototype.newValueChanged = function(event)
 
 	var newFreeSpace = this.partitionSizes[this.resizeName] - this.resizeValue + this.freeSpace;
 	if (newFreeSpace >= 0) {
-		this.newSizeTitle.innerHTML = "Partition Sizing ("+newFreeSpace + " MB free)";
+		this.newValueLabel.innerHTML = "MiB ("+newFreeSpace + " MiB LEFT)";
 	}
 	else {
-		this.newSizeTitle.innerHTML = "Partition Sizing (No free space)";
+		this.newValueLabel.innerHTML = "MiB (NO FREE SPACE)";
 	}
 	
 	if ((this.resizeValue == 0) || (this.resizeValue == this.partitionSizes[this.resizeName])) {
@@ -260,18 +362,58 @@ MainAssistant.prototype.resizeTap = function(event)
 	var value = this.newValueModel.value;
 
 	if (value < this.partitionSizes[name]) {
-		this.status.innerHTML = "Reducing to "+this.showValue(value, "MB");
+		this.status.innerHTML = "Reducing to "+this.showValue(value, "MiB");
 	}
 	else if (value > this.partitionSizes[name]) {
-		this.status.innerHTML = "Extending to "+this.showValue(value, "MB");
+		this.status.innerHTML = "Extending to "+this.showValue(value, "MiB");
 	}
 	else {
-		this.status.innerHTML = "Unchanged at "+this.showValue(value, "MB");
+		this.status.innerHTML = "Unchanged at "+this.showValue(value, "MiB");
 	}
 	
 	// %%% Do stuff %%%
 
 	this.resizeButton.mojo.deactivate();
+};
+
+MainAssistant.prototype.mediaMountTap = function(event)
+{
+	if (this.mountPoints["/media/internal"]) {
+		this.request = TailorService.unmountMedia(this.mediaMountHandler);
+	}
+	else {
+		this.request = TailorService.mountMedia(this.mediaMountHandler);
+	}
+}
+
+MainAssistant.prototype.mediaMount = function(payload)
+{
+	if (payload.returnValue === false) {
+		this.errorMessage('<b>Service Error (mediaMount):</b><br>'+payload.errorText);
+	}
+
+	this.mediaMountButton.mojo.deactivate();
+	this.refresh();
+};
+
+MainAssistant.prototype.ext3fsMountTap = function(event)
+{
+	if (this.mountPoints["/media/ext3fs"]) {
+		this.request = TailorService.unmountExt3fs(this.ext3fsMountHandler);
+	}
+	else {
+		this.request = TailorService.mountExt3fs(this.ext3fsMountHandler);
+	}
+};
+
+MainAssistant.prototype.ext3fsMount = function(payload)
+{
+	if (payload.returnValue === false) {
+		this.errorMessage('<b>Service Error (ext3fsMount):</b><br>'+payload.errorText);
+	}
+
+	this.ext3fsMountButton.mojo.deactivate();
+	this.refresh();
 };
 
 MainAssistant.prototype.getRandomSubTitle = function()
@@ -305,9 +447,7 @@ MainAssistant.prototype.showValue = function(value, units)
 	while ((value > 1024) || (value < -1024)) {
 		value = value / 1024;
 		switch (units) {
-		case "B": units = "kB"; break;
-		case "kB": units = "MB"; break;
-		case "MB": units = "GB"; break;
+		case "MiB": units = "GiB"; break;
 		}
 	}
 	return Math.round(value*1000)/1000+" "+units;
@@ -354,10 +494,12 @@ MainAssistant.prototype.handleCommand = function(event)
 
 MainAssistant.prototype.cleanup = function(event)
 {
-	this.controller.stopListening(this.listElement, Mojo.Event.listTap, this.volumeTappedHandler);
-	this.controller.stopListening(this.newNameElement, Mojo.Event.propertyChange, this.newNameChangedHandler);
-	this.controller.stopListening(this.newValueElement, Mojo.Event.propertyChange, this.newValueChangedHandler);
+	this.controller.stopListening(this.volumeList, Mojo.Event.listTap, this.volumeTappedHandler);
+	this.controller.stopListening(this.newNameList, Mojo.Event.propertyChange, this.newNameChangedHandler);
+	this.controller.stopListening(this.newValueField, Mojo.Event.propertyChange, this.newValueChangedHandler);
 	this.controller.stopListening(this.resizeButton,  Mojo.Event.tap, this.resizeTapHandler);
+	this.controller.stopListening(this.mediaMountButton,  Mojo.Event.tap, this.mediaMountTapHandler);
+	this.controller.stopListening(this.ext3fsMountButton,  Mojo.Event.tap, this.ext3fsMountTapHandler);
 };
 
 // Local Variables:
