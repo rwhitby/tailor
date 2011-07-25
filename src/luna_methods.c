@@ -20,6 +20,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <pthread.h>
+#include <syslog.h>
 
 #include "luna_service.h"
 #include "luna_methods.h"
@@ -36,6 +38,13 @@ static char buffer[MAXBUFLEN];
 static char esc_buffer[MAXBUFLEN];
 static char run_command_buffer[MAXBUFLEN];
 static char read_file_buffer[CHUNKSIZE+CHUNKSIZE+1];
+
+typedef struct {
+  LSMessage *message;
+  FILE *fp;
+} THREAD_DATA;
+
+pthread_t resizeMediaThread = 0;
 
 //
 // Escape a string so that it can be used directly in a JSON response.
@@ -167,24 +176,7 @@ bool version_method(LSHandle* lshandle, LSMessage *message, void *ctx) {
 }
 
 //
-// A function pointer, used to filter output messages from commands.
-// The input string is assumed to be a buffer large enough to hold
-// the filtered output string, and is forcibly overwritten.
-// The return value says whether this message should be considered
-// to be an immediate terminating error condition from the command.
-//
-typedef bool (*subscribefun)(char *);
-
-//
-// Pass through all messages unchanged.
-//
-static bool passthrough(char *message) {
-  return true;
-}
-
-//
 // Run a shell command, and return the output in-line in a buffer for returning to webOS.
-// If message and subscriber are defined, then also send back status messages.
 // The global run_command_buffer must be initialised before calling this function.
 // The return value says whether the command executed successfully or not.
 //
@@ -268,7 +260,7 @@ static bool run_command(char *command, bool escape) {
 // Send a standard format command failure message back to webOS.
 // The command will be escaped.  The output argument should be a JSON array and is not escaped.
 // The additional text  will not be escaped.
-// The return value is from the LSMessageReply call, not related to the command execution.
+// The return value is from the LSMessageRespond call, not related to the command execution.
 //
 static bool report_command_failure(LSMessage *message, char *command, char *stdErrText, char *additional) {
   LSError lserror;
@@ -348,162 +340,137 @@ static bool simple_command(LSMessage *message, char *command) {
   return false;
 }
 
-//
-// Get the list of scripts, and return them.
-//
-void *list_thread(void *arg) {
+void resize_media_thread_cleanup(void *arg) {
+  THREAD_DATA *data = (THREAD_DATA *)arg;
+
+  syslog(LOG_DEBUG, "Resize thread cleanup, closing pipe %p, unref message %p\n", 
+      data->fp, data->message);
+
+  if (data->fp) pclose(data->fp);
+  if (data->message) LSMessageUnref(data->message);
+}
+
+
+void *resize_media_thread(void *ctx) {
   LSError lserror;
   LSErrorInit(&lserror);
-
-  // Local buffer to store the config filename
-  char filename[MAXNAMLEN];
-
-  // Local buffer to build a command to read the list of files
+  char buffer[MAXBUFLEN];
+  char esc_buffer[MAXBUFLEN];
   char command[MAXLINLEN];
+  THREAD_DATA data;
+  char line[MAXLINLEN];
+  pthread_key_t key;
 
-  // Is this the first line of output?
-  bool first = true;
+  data.message = (LSMessage *)ctx;
 
-  // Was there an error in accessing any of the files?
-  bool error = false;
-
-  // Length of buffer before the last command
-  int lastlen = 0;
-
-  LSMessage *message = (LSMessage *)arg;
+  // Extract the group argument from the message
+  json_t *object = json_parse_document(LSMessageGetPayload(data.message));
+  json_t *size = json_find_first_label(object, "size");               
+  if (!size || (size->child->type != JSON_STRING) ||
+      (strspn(size->child->text, ALLOWED_CHARS) != strlen(size->child->text))) {
+    if (!LSMessageRespond(data.message,
+			"{\"returnValue\": false, \"errorCode\": -1, \"errorText\": \"Invalid or missing size\"}",
+			&lserror)) goto error;
+    return NULL;
+  }
 
   // Initialise the command
-  sprintf(command, "/bin/ls -1 / 2>&1");
+  sprintf(command, "/bin/resizefat -v /dev/mapper/store-media %s 2>&1", size->child->text);
 
-  // Start execution of the command to list the config files.
-  FILE *fp = popen(command, "r");
+  // Create thread key/value
+  pthread_key_create(&key, resize_media_thread_cleanup);
+  pthread_setspecific(key, &data);
 
-  // If the command cannot be started
-  if (!fp) {
+  data.fp = popen(command, "r");
+  syslog(LOG_DEBUG, "resize pipe fp %p\n", data.fp);
 
-    // then report the error to webOS.
-    if (!report_command_failure(message, command, NULL, NULL)) goto end;
-
-    // The error report has been sent, so return to webOS.
-    return;
+  if (!data.fp) {
+    if (!LSMessageRespond(data.message, "{\"returnValue\": false, \"stage\": \"failed\"}", &lserror)) goto error;
+    return NULL;
   }
 
-  // Initialise the output message.
-  strcpy(buffer, "{");
-  lastlen = strlen(buffer);
-
-  // Loop through the list of files in the scripts directory.
-  while (fgets( filename, sizeof filename, fp)) {
-
-    // Push out a partial chunk
-    if (strlen(buffer) >= CHUNKSIZE) {
-
-      // Terminate the JSON array
-      if (!first) {
-	strcat(buffer, "], ");
-      }
-
-      strcat(buffer, "\"stage\": \"middle\", ");
-
-      // Check the error status, and return the current error status
-      if (error) {
-	strcat(buffer, "\"returnValue\": false}");
-      }
-      else {
-	strcat(buffer, "\"returnValue\": true}");
-      }
-      
-      fprintf(stderr, "Message is %s\n", buffer);
-
-      // Return the results to webOS.
-      if (!LSMessageRespond(message, buffer, &lserror)) goto error;
-
-      // This is now the first line of output
-      first = true;
-
-      // Initialise the output message.
-      strcpy(buffer, "{");
-      lastlen = strlen(buffer);
-    }
-
+  // Loop through the output lines
+  while (fgets(line, sizeof line, data.fp)) {
     // Chomp the newline
-    char *nl = strchr(filename,'\n'); if (nl) *nl = 0;
+    char *nl = strchr(line,'\n'); if (nl) *nl = 0;
 
-    // Ignore the function files
-    if (!strncmp(filename, "srf.", 4)) continue;
+    // Send it as a status message.
+    strcpy(buffer, "{\"returnValue\": true, \"stage\": \"status\", \"status\": \"");
+    strcat(buffer, json_escape_str(line));
+    strcat(buffer, "\"}");
 
-    // Start or continue the JSON array
-    if (first) {
-      strcat(buffer, "\"scripts\": [");
-      lastlen = strlen(buffer);
-      first = false;
-    }
-    else if (strlen(buffer) > lastlen) {
-      strcat(buffer, ", ");
-      lastlen = strlen(buffer);
-    }
-
-    // Initialise the command to read the contents of the file.
-    sprintf(command, "/%s info 2>&1", filename);
-
-    // Initialise the output buffer.
-    strcpy(run_command_buffer, "");
-
-    // Retrieve the file contents, and check for an error
-    if (!run_command(command, false)) {
-      error = true;
-    }
-
-    // Store the command output (the contents of the file)
-    strcat(buffer, run_command_buffer);
+    // %%% Should we break out of the loop here, or just ignore the error? %%%
+    if (!LSMessageRespond(data.message, buffer, &lserror)) goto error;
 
   }
 
-  // Terminate the JSON array
-  if (!first) {
-    strcat(buffer, "], ");
-  }
+  if (!LSMessageRespond(data.message, "{\"returnValue\": true, \"stage\": \"completed\"}", &lserror)) goto error;
 
-  strcat(buffer, "\"stage\": \"end\", ");
-
-  // Check the close status of the process, and return the combined error status
-  if (pclose(fp) || error) {
-    strcat(buffer, "\"returnValue\": false}");
-  }
-  else {
-    strcat(buffer, "\"returnValue\": true}");
-  }
-
-  fprintf(stderr, "Message is %s\n", buffer);
-
-  // Return the results to webOS.
-  if (!LSMessageRespond(message, buffer, &lserror)) goto error;
-
- end:
-  LSMessageUnref(message);
-  return;
+  goto end;
 
  error:
   LSErrorPrint(&lserror, stderr);
   LSErrorFree(&lserror);
-  goto end;
+ end:
+  return NULL;
 }
 
 //
-// Get the list of scripts, and return them.
+// Run resizefat and provide the output back to Mojo
 //
-bool list_method(LSHandle* lshandle, LSMessage *message, void *ctx) {
+bool resize_media_method(LSHandle* lshandle, LSMessage *message, void *ctx) {
   LSError lserror;
   LSErrorInit(&lserror);
 
-  pthread_t tid;
+  if (resizeMediaThread) {
+    syslog(LOG_NOTICE, "Resize thread already running\n");
+    if (!LSMessageRespond(message, "{\"returnValue\": false, \"stage\": \"failed\"}", &lserror)) goto error;
+    return true;
+  }
 
+  syslog(LOG_DEBUG, "Create resize thread, ref message %p\n", message);
+
+  // Ref and save the message for use in resize thread
   LSMessageRef(message);
 
-  // Report that the update operaton has begun
-  if (!LSMessageRespond(message, "{\"stage\": \"start\", \"returnValue\": true}", &lserror)) goto error;
+  if (pthread_create(&resizeMediaThread, NULL, resize_media_thread, (void*)message)) {
+    syslog(LOG_ERR, "Creating resize thread failed (0x%x)\n", resizeMediaThread);
+    // Report that the resize operation was not able to start
+    if (!LSMessageRespond(message, "{\"returnValue\": false, \"errorCode\": -1, \"errorText\": \"Unable to start resize thread\"}", &lserror)) goto error;
+  }
+  else {
+    syslog(LOG_DEBUG, "Created resize thread successfully (0x%x)\n", resizeMediaThread);
+    // Report that the resize operation has begun
+    if (!LSMessageRespond(message, "{\"returnValue\": true, \"stage\": \"start\"}", &lserror)) goto error;
+  }
 
-  pthread_create(&tid, NULL, list_thread, (void *)message);
+  return true;
+ error:
+  LSErrorPrint(&lserror, stderr);
+  LSErrorFree(&lserror);
+ end:
+  return false;
+}
+
+//
+// Kill the currently running resize
+//
+bool kill_resize_media_method(LSHandle* lshandle, LSMessage *message, void *ctx) {
+  LSError lserror;
+  LSErrorInit(&lserror);
+
+  if (!resizeMediaThread) {
+    syslog(LOG_NOTICE, "Resize thread 0x%x not running\n", resizeMediaThread);
+    if (!LSMessageRespond(message, "{\"returnValue\": false, \"stage\": \"failed\"}", &lserror)) goto error;
+    return true;
+  }
+
+  syslog(LOG_DEBUG, "Killing resize thread 0x%x\n", resizeMediaThread);
+  
+  pthread_cancel(resizeMediaThread);
+  resizeMediaThread = 0;
+
+  if (!LSMessageRespond(message, "{\"returnValue\": true, \"stage\": \"completed\"}", &lserror)) goto error;
 
   return true;
  error:
@@ -729,6 +696,10 @@ LSMethod luna_methods[] = {
   { "listVolumes",	list_volumes_method },
   { "listMounts",	list_mounts_method },
   { "unmountMedia",	unmount_media_method },
+  { "resizeMedia",	resize_media_method },
+  { "killResizeMedia",	kill_resize_media_method },
+  //  { "reduceMedia",	reduce_media_method },
+  //  { "extendMedia",	extend_media_method },
   { "mountMedia",	mount_media_method },
   { "unmountExt3fs",	unmount_ext3fs_method },
   { "mountExt3fs",	mount_ext3fs_method },

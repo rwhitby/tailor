@@ -4,6 +4,7 @@ function MainAssistant()
 	this.randomSub =
 		[
 		 {weight: 30, text: $L('Tailoring the storage on your device')},
+		 {weight: 10, text: $L('Formerly known as Resizah')},
 		 {weight: 6, text: $L("<a href=\"https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=4DRCMPBJ8VYQQ\">Donated</a> To WebOS Internals Lately?")}
 		 ];
 	
@@ -207,7 +208,7 @@ MainAssistant.prototype.refresh = function()
 MainAssistant.prototype.listGroups = function(payload)
 {
 	if (payload.returnValue === false) {
-		this.errorMessage('<b>Service Error (listGroups):</b><br>'+payload.errorText);
+		this.errorMessage('<b>Service Error (listGroups):</b><br>'+payload.errorText, payload.stdErr);
 		this.overlay.hide();
 		return;
 	}
@@ -230,7 +231,7 @@ MainAssistant.prototype.listGroups = function(payload)
 MainAssistant.prototype.listVolumes = function(payload)
 {
 	if (payload.returnValue === false) {
-		this.errorMessage('<b>Service Error (listVolumes):</b><br>'+payload.errorText);
+		this.errorMessage('<b>Service Error (listVolumes):</b><br>'+payload.errorText, payload.stdErr);
 		this.overlay.hide();
 		return;
 	}
@@ -269,7 +270,7 @@ MainAssistant.prototype.listVolumes = function(payload)
 MainAssistant.prototype.listMounts = function(payload)
 {
 	if (payload.returnValue === false) {
-		this.errorMessage('<b>Service Error (listMounts):</b><br>'+payload.errorText);
+		this.errorMessage('<b>Service Error (listMounts):</b><br>'+payload.errorText, payload.stdErr);
 		this.overlay.hide();
 		return;
 	}
@@ -414,7 +415,7 @@ MainAssistant.prototype.mediaMountTap = function(event)
 MainAssistant.prototype.mediaMount = function(payload)
 {
 	if (payload.returnValue === false) {
-		this.errorMessage('<b>Service Error (mediaMount):</b><br>'+payload.errorText);
+		this.errorMessage('<b>Service Error (mediaMount):</b><br>'+payload.errorText, payload.stdErr);
 	}
 
 	this.mediaMountButton.mojo.deactivate();
@@ -434,7 +435,7 @@ MainAssistant.prototype.ext3fsMountTap = function(event)
 MainAssistant.prototype.ext3fsMount = function(payload)
 {
 	if (payload.returnValue === false) {
-		this.errorMessage('<b>Service Error (ext3fsMount):</b><br>'+payload.errorText);
+		this.errorMessage('<b>Service Error (ext3fsMount):</b><br>'+payload.errorText, payload.stdErr);
 	}
 
 	this.ext3fsMountButton.mojo.deactivate();
@@ -454,7 +455,7 @@ MainAssistant.prototype.optwareMountTap = function(event)
 MainAssistant.prototype.optwareMount = function(payload)
 {
 	if (payload.returnValue === false) {
-		this.errorMessage('<b>Service Error (optwareMount):</b><br>'+payload.errorText);
+		this.errorMessage('<b>Service Error (optwareMount):</b><br>'+payload.errorText, payload.stdErr);
 	}
 
 	this.optwareMountButton.mojo.deactivate();
@@ -496,7 +497,7 @@ MainAssistant.prototype.showValue = function(value, units)
 		}
 	}
 	return Math.round(value*1000)/1000+" "+units;
-}
+};
 
 MainAssistant.prototype.onlyNumbers = function (charCode)
 {
@@ -504,15 +505,19 @@ MainAssistant.prototype.onlyNumbers = function (charCode)
 		return true;
 	}
 	return false;
-}
+};
 
-MainAssistant.prototype.errorMessage = function(msg)
+MainAssistant.prototype.errorMessage = function(message, stdErr)
 {
+	if (stdErr && stdErr.length) {
+		message = message + '<br>' + stdErr.join('<br>');
+	}
+
 	this.controller.showAlertDialog({
 			allowHTMLMessage:	true,
 			preventCancel:		true,
-			title:				'Tailor',
-			message:			msg,
+			title:				"Tailor",
+			message:			message,
 			choices:			[{label:$L("Ok"), value:'ok'}],
 			onChoose:			function(e){}
 		});

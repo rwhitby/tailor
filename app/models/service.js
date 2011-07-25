@@ -50,6 +50,32 @@ TailorService.unmountMedia = function(callback)
     return request;
 };
 
+TailorService.resizeMedia = function(callback, size)
+{
+    var request = new Mojo.Service.Request(TailorService.identifier,
+	{
+	    method: 'resizeMedia',
+		parameters:
+		{
+			"size": size
+		},
+	    onSuccess: callback,
+	    onFailure: callback
+	});
+    return request;
+};
+
+TailorService.killResizeMedia = function(callback)
+{
+    var request = new Mojo.Service.Request(TailorService.identifier,
+	{
+	    method: 'killResizeMedia',
+	    onSuccess: callback,
+	    onFailure: callback
+	});
+    return request;
+};
+
 TailorService.mountMedia = function(callback)
 {
     var request = new Mojo.Service.Request(TailorService.identifier,
