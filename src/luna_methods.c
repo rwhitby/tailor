@@ -524,7 +524,7 @@ bool list_volumes_method(LSHandle* lshandle, LSMessage *message, void *ctx) {
   }
 
   // Store the command, so it can be used in the error report if necessary
-  sprintf(command, "/usr/sbin/lvdisplay %s -c 2>&1", group);
+  sprintf(command, "/usr/sbin/lvdisplay %s -c 2>&1", group->child->text);
   
   return simple_command(message, command);
 
@@ -547,6 +547,38 @@ bool list_mounts_method(LSHandle* lshandle, LSMessage *message, void *ctx) {
 
   // Store the command, so it can be used in the error report if necessary
   sprintf(command, "cat /proc/mounts 2>&1");
+  
+  return simple_command(message, command);
+
+ error:
+  LSErrorPrint(&lserror, stderr);
+  LSErrorFree(&lserror);
+ end:
+  return false;
+}
+
+// Run command to retrieve filesystem usage
+//
+bool get_usage_method(LSHandle* lshandle, LSMessage *message, void *ctx) {
+  LSError lserror;
+  LSErrorInit(&lserror);
+
+  // Local buffer to store the command
+  char command[MAXLINLEN];
+
+  // Extract the group argument from the message
+  json_t *object = json_parse_document(LSMessageGetPayload(message));
+  json_t *filesystem = json_find_first_label(object, "filesystem");
+  if (!filesystem || (filesystem->child->type != JSON_STRING) ||
+      (strspn(filesystem->child->text, ALLOWED_CHARS) != strlen(filesystem->child->text))) {
+    if (!LSMessageRespond(message,
+			"{\"returnValue\": false, \"errorCode\": -1, \"errorText\": \"Invalid or missing filesystem\"}",
+			&lserror)) goto error;
+    return true;
+  }
+
+  // Store the command, so it can be used in the error report if necessary
+  sprintf(command, "/bin/df -m /dev/mapper/%s 2>&1", filesystem->child->text);
   
   return simple_command(message, command);
 
@@ -695,6 +727,7 @@ LSMethod luna_methods[] = {
   { "listGroups",	list_groups_method },
   { "listVolumes",	list_volumes_method },
   { "listMounts",	list_mounts_method },
+  { "getUsage",		get_usage_method },
   { "unmountMedia",	unmount_media_method },
   { "resizeMedia",	resize_media_method },
   { "killResizeMedia",	kill_resize_media_method },

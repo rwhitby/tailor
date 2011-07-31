@@ -1,0 +1,12 @@
+{
+  "id": "org.webosinternals.tailor",
+  "package_format_version": 2,
+  "loc_name": "Tailor",
+  "version": "0.0.1",
+  "icon": "icon.png",
+  "miniicon": "icon.png",
+  "vendor": "WebOS Internals",
+  "vendorurl": "www.webos-internals.org",
+  "app": "org.webosinternals.tailor",
+  "services": ["org.webosinternals.tailor.node"]
+}

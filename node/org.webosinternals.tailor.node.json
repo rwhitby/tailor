@@ -1,0 +1,14 @@
+{
+  "role": {
+     "exeName":"js",
+     "type": "privileged",
+     "allowedNames": ["org.webosinternals.tailor.node"]
+  },
+  "permissions": [
+    {
+      "service":"org.webosinternals.tailor.node",
+      "inbound":["*"],
+      "outbound":["*"]
+    }
+  ]
+}

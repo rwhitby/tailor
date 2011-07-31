@@ -1,47 +1,84 @@
 #!/bin/sh                                                                                       
 
-SID="org.webosinternals.tailor"
+APPID=org.webosinternals.tailor
+CSRVID=org.webosinternals.tailor
+NSRVID=org.webosinternals.tailor.node
 
 APPS=/media/cryptofs/apps
 
-[ -d $APPS ] || { echo "Requires webOS 1.3.5 or later" ; exit 1 ; }
+[ -d ${APPS} ] || { echo "Requires webOS 1.3.5 or later" ; exit 1 ; }
 
-# Remove the service executable
-rm -f /var/usr/sbin/${SID}
+APPDIR=${APPS}/usr/palm/applications/${APPID}
+NSRVDIR=${APPS}/usr/palm/services/${NSRVID}
+CSRVDIR=${APPS}/usr/palm/applications/${APPID}/src
+
+# Remove the C service executable
+rm -f /var/usr/sbin/${CSRVID}
 
 # Remove the dbus service
-rm -f /var/palm/system-services/${SID}.service
+rm -f /var/palm/system-services/${CSRVID}.service
 
 # Remove the ls2 roles
-rm -f /var/palm/ls2/roles/prv/${SID}.json
-rm -f /var/palm/ls2/roles/pub/${SID}.json
+rm -f /var/palm/ls2/roles/prv/${CSRVID}.json /var/palm/ls2/roles/pub/${CSRVID}.json
 
-# Stop the service if running
-/sbin/stop ${SID} || true
-/usr/bin/killall -9 ${SID} || true
+# Stop the C service if running
+/sbin/stop ${CSRVID} || true
+/usr/bin/killall -9 ${CSRVID} || true
 
 # Remove the upstart script
-rm -f /var/palm/event.d/${SID}
+rm -f /var/palm/event.d/${CSRVID}
 
-# Install the service executable
+# Install the C service executable
 mkdir -p /var/usr/sbin/
-install -m 755 $APPS/usr/palm/applications/${SID}/bin/${SID} /var/usr/sbin/${SID}
+install -m 755 ${CSRVDIR}/tailor /var/usr/sbin/${CSRVID}
 
 # Install the dbus service
-mkdir -p /var/palm/system-services
-cp $APPS/usr/palm/applications/${SID}/dbus/${SID}.service /var/palm/system-services/${SID}.service
+mkdir -p /var/palm/ls2/services/prv /var/palm/ls2/services/pub
+cp ${CSRVDIR}/${CSRVID}.service /var/palm/ls2/services/prv/${CSRVID}.service
+cp ${CSRVDIR}/${CSRVID}.service /var/palm/ls2/services/pub/${CSRVID}.service
 
 # Install the ls2 roles
 mkdir -p /var/palm/ls2/roles/prv /var/palm/ls2/roles/pub
-cp $APPS/usr/palm/applications/${SID}/dbus/${SID}.json /var/palm/ls2/roles/prv/${SID}.json
-cp $APPS/usr/palm/applications/${SID}/dbus/${SID}.json /var/palm/ls2/roles/pub/${SID}.json
+cp ${CSRVDIR}/${CSRVID}.json /var/palm/ls2/roles/prv/${CSRVID}.json
+cp ${CSRVDIR}/${CSRVID}.json /var/palm/ls2/roles/pub/${CSRVID}.json
 /usr/bin/ls-control scan-services || true
 
 # Install the upstart script
 mkdir -p /var/palm/event.d
-cp $APPS/usr/palm/applications/${SID}/upstart/${SID} /var/palm/event.d/${SID}
+cp ${CSRVDIR}/${CSRVID} /var/palm/event.d/${CSRVID}
 
-# Start the service
-/sbin/start ${SID}
+# Start the C service
+/sbin/start ${CSRVID}
+
+# Remove the node service executable
+rm -f /var/usr/sbin/${NSRVID}
+
+# Remove the node dbus service
+rm -f /var/palm/ls2/services/prv/${NSRVID}.service
+rm -f /var/palm/ls2/services/pub/${NSRVID}.service
+
+# Remove the node ls2 roles
+rm -f /var/palm/ls2/roles/prv/${NSRVID}.json
+rm -f /var/palm/ls2/roles/pub/${NSRVID}.json
+/usr/bin/ls-control scan-services || true
+
+# Stop the node service if running
+/usr/bin/luna-send -n 1 palm://${NSRVID}/__quit '{}'
+
+# Install the node service executable
+mkdir -p /var/usr/sbin/
+sed -e "s|jail=on|jail=off|" -e "s|SERVICE_PATH=\$1|set ${NSRVDIR}\n\nSERVICE_PATH=\$1|" \
+    /usr/bin/run-js-service > /var/usr/sbin/${NSRVID}
+chmod ugo+x /var/usr/sbin/${NSRVID}
+
+# Override the node dbus service
+cp ${NSRVDIR}/${NSRVID}.service /var/palm/ls2/services/prv/${NSRVID}.service
+cp ${NSRVDIR}/${NSRVID}.service /var/palm/ls2/services/pub/${NSRVID}.service
+
+# Install the node ls2 roles
+mkdir -p /var/palm/ls2/roles/prv /var/palm/ls2/roles/pub
+cp ${NSRVDIR}/${NSRVID}.json /var/palm/ls2/roles/prv/${NSRVID}.json
+cp ${NSRVDIR}/${NSRVID}.json /var/palm/ls2/roles/pub/${NSRVID}.json
+/usr/bin/ls-control scan-services || true
 
 exit 0

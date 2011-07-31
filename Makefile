@@ -7,7 +7,7 @@ device:
 	cd src && ${MAKE} DEVICE=1
 
 package: clean device
-	palm-package .
+	palm-package . package node
 	ar q ${APPID}_*.ipk pmPostInstall.script
 	ar q ${APPID}_*.ipk pmPreRemove.script
 

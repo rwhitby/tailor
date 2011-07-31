@@ -1,0 +1,55 @@
+{
+    "id": "org.webosinternals.tailor.node",
+    "description": "Tailor Service",
+    "services": [ {
+    "name": "org.webosinternals.tailor.node",
+    "description": "Tailor Service",
+    "privatebus": true,
+    "commands": [ { 
+            "name": "status", 
+            "assistant": "Status",
+	    "public": true
+             }, { 
+            "name": "version", 
+            "assistant": "Version",
+	    "public": true
+             }, { 
+            "name": "listGroups", 
+            "assistant": "ListGroups",
+	    "public": true
+             }, { 
+            "name": "listVolumes", 
+            "assistant": "ListVolumes",
+	    "public": true
+             }, { 
+            "name": "listMounts", 
+            "assistant": "ListMounts",
+	    "public": true
+             }, { 
+            "name": "unmountMedia", 
+            "assistant": "UnmountMedia",
+	    "public": true
+             }, { 
+            "name": "mountMedia", 
+            "assistant": "MountMedia",
+	    "public": true
+             }, { 
+            "name": "unmountExt3fs", 
+            "assistant": "UnmountExt3fs",
+	    "public": true
+             }, { 
+            "name": "mountExt3fs", 
+            "assistant": "MountExt3fs",
+	    "public": true
+             }, { 
+            "name": "unmountOptware", 
+            "assistant": "UnmountOptware",
+	    "public": true
+             }, { 
+            "name": "mountOptware", 
+            "assistant": "MountOptware",
+	    "public": true
+             }
+           ]
+        }]
+}

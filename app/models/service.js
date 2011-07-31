@@ -1,4 +1,4 @@
-TailorService.identifier = 'palm://org.webosinternals.tailor';
+TailorService.identifier = 'palm://org.webosinternals.tailor.node';
 
 function TailorService(){};
 
@@ -59,17 +59,6 @@ TailorService.resizeMedia = function(callback, size)
 		{
 			"size": size
 		},
-	    onSuccess: callback,
-	    onFailure: callback
-	});
-    return request;
-};
-
-TailorService.killResizeMedia = function(callback)
-{
-    var request = new Mojo.Service.Request(TailorService.identifier,
-	{
-	    method: 'killResizeMedia',
 	    onSuccess: callback,
 	    onFailure: callback
 	});
