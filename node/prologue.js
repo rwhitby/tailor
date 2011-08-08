@@ -6,4 +6,5 @@ if (typeof require === 'undefined') {
 // Enable logging
 var logger = require('pmloglib');
 
-var exec = require('child_process').exec;
+var exec  = require('child_process').exec;
+var spawn = require('child_process').spawn;

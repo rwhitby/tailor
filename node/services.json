@@ -26,6 +26,11 @@
             "assistant": "ListMounts",
 	    "public": true
              }, { 
+            "name": "checkFilesystem", 
+            "assistant": "CheckFilesystem",
+	    "subscribe": true,
+	    "public": true
+             }, { 
             "name": "unmountMedia", 
             "assistant": "UnmountMedia",
 	    "public": true

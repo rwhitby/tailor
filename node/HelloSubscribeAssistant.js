@@ -1,5 +1,3 @@
-var spawn = require('child_process').spawn;
-
 var HelloSubscribeAssistant = function() {
 };
   

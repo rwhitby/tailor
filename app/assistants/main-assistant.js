@@ -34,6 +34,11 @@ function MainAssistant()
 
 	this.newValueModel = { disabled: true };
 
+	this.checkButtonModel = {
+		label: $L("Check Partition"),
+		disabled: true
+	};
+
 	this.resizeButtonModel = {
 		label: $L("Resize Partition"),
 		disabled: true
@@ -76,6 +81,8 @@ function MainAssistant()
 
 	this.partitionSizes = false;
 	this.mountPoints = false;
+
+	this.rebootRequired = false;
 };
 
 MainAssistant.prototype.setup = function()
@@ -94,9 +101,11 @@ MainAssistant.prototype.setup = function()
 
 	this.volumeList =		this.controller.get('volumeList');
 
+	this.freeSpaceValue =	this.controller.get('freeSpaceValue');
 	this.newNameList =		this.controller.get('newNameList');
 	this.newValueLabel =	this.controller.get('newValueLabel');
 	this.newValueField =	this.controller.get('newValueField');
+	this.checkButton =		this.controller.get('checkButton');
 	this.resizeButton =		this.controller.get('resizeButton');
 
 	this.mediaMountButton  = this.controller.get('mediaMountButton');
@@ -119,6 +128,7 @@ MainAssistant.prototype.setup = function()
 	this.volumeTappedHandler = this.volumeTapped.bindAsEventListener(this);
 	this.newNameChangedHandler =  this.newNameChanged.bindAsEventListener(this);
 	this.newValueChangedHandler =  this.newValueChanged.bindAsEventListener(this);
+	this.checkTapHandler = this.checkTap.bindAsEventListener(this);
 	this.resizeTapHandler = this.resizeTap.bindAsEventListener(this);
 	this.listMountsHandler = this.listMounts.bindAsEventListener(this);
 	this.mediaMountTapHandler = this.mediaMountTap.bindAsEventListener(this);
@@ -153,6 +163,8 @@ MainAssistant.prototype.setup = function()
 				},
 		this.newValueModel);
 	this.controller.listen(this.newValueField, Mojo.Event.propertyChange, this.newValueChangedHandler);
+	this.controller.setupWidget('checkButton', { type: Mojo.Widget.activityButton }, this.checkButtonModel);
+	this.controller.listen(this.checkButton, Mojo.Event.tap, this.checkTapHandler);
 	this.controller.setupWidget('resizeButton', { type: Mojo.Widget.activityButton }, this.resizeButtonModel);
 	this.controller.listen(this.resizeButton, Mojo.Event.tap, this.resizeTapHandler);
 	this.controller.setupWidget('mediaMountButton', { type: Mojo.Widget.activityButton }, this.mediaMountButtonModel);
@@ -188,6 +200,8 @@ MainAssistant.prototype.refresh = function()
 	this.controller.modelChanged(this.newNameModel);
 	this.newValueModel.disabled = true;
 	this.controller.modelChanged(this.newValueModel);
+	this.checkButtonModel.disabled = true;
+	this.controller.modelChanged(this.checkButtonModel);
 	this.resizeButtonModel.disabled = true;
 	this.controller.modelChanged(this.resizeButtonModel);
 	this.mountPoints = {
@@ -245,7 +259,7 @@ MainAssistant.prototype.listVolumes = function(payload)
 				var name = trim(fields[0]).split("/")[3];
 				if (this.partitionNames[name]) {
 					this.partitionSizes[name] = size;
-					this.volumesModel.items.push({label: this.partitionNames[name]+" Partition:", title: this.showValue(size, "MiB"), name: name, labelClass: 'left', titleClass: 'right'});
+					this.volumesModel.items.push({label: this.partitionNames[name]+":", title: this.showValue(size, "MiB"), name: name, labelClass: 'left', titleClass: 'right'});
 				}
 			}
 		}
@@ -261,6 +275,9 @@ MainAssistant.prototype.listVolumes = function(payload)
 	this.newNameModel.value = this.newNameModel.choices[0].label;
 	this.newNameModel.disabled = false;
 	this.controller.modelChanged(this.newNameModel);
+
+	this.checkButtonModel.disabled = false;
+	this.controller.modelChanged(this.checkButtonModel);
 
 	this.newNameChanged({value:this.newNameModel.choices[0].value});
 
@@ -293,6 +310,8 @@ MainAssistant.prototype.listMounts = function(payload)
 		this.controller.modelChanged(this.optwareMountButtonModel);
 	}
 
+	var jailActive = false;
+
 	if (payload.stdOut && payload.stdOut.length > 0) {
 		for (var a = 0; a < payload.stdOut.length; a++) {
 			var line = payload.stdOut[a];
@@ -304,6 +323,9 @@ MainAssistant.prototype.listMounts = function(payload)
 				if ((mountType == "ext3") || (mountType == "vfat")) {
 					if (this.mountNames[mountSource]) {
 						this.mountsModel.items.push({label: this.mountNames[mountSource], title: mountPoint, labelClass: 'left', titleClass: 'right'});
+						if (mountPoint.indexOf("/var/palm/jail/") != -1) {
+							jailActive = true;
+						}
 					}
 					if ((mountPoint == "/media/internal") && this.partitionSizes["media"]) {
 						this.mountPoints[mountPoint] = mountSource;
@@ -331,11 +353,32 @@ MainAssistant.prototype.listMounts = function(payload)
 	this.mountList.mojo.noticeUpdatedItems(0, this.mountsModel.items);
 	this.mountList.mojo.setLength(this.mountsModel.items.length);
 
+	if (jailActive) {
+		this.errorMessage("<b>Danger Will Robinson!</b><br>Jails are active. Reboot your device and then immediately relaunch only this program and no other applications before continuing.");
+		this.status.innerHTML = "Reboot required ...";
+		this.newNameModel.disabled = true;
+		this.controller.modelChanged(this.newNameModel);
+		this.newValueModel.disabled = true;
+		this.controller.modelChanged(this.newValueModel);
+		this.checkButtonModel.disabled = true;
+		this.controller.modelChanged(this.checkButtonModel);
+		this.resizeButtonModel.disabled = true;
+		this.controller.modelChanged(this.resizeButtonModel);
+		this.mediaMountButtonModel.disabled = true;
+		this.controller.modelChanged(this.mediaMountButtonModel);
+		this.ext3fsMountButtonModel.disabled = true;
+		this.controller.modelChanged(this.ext3fsMountButtonModel);
+		this.optwareMountButtonModel.disabled = true;
+		this.controller.modelChanged(this.optwareMountButtonModel);
+		this.rebootRequired = true;
+	}
+
 	this.overlay.hide();
 };
 
 MainAssistant.prototype.volumeTapped = function(event)
 {
+	if (this.rebootRequired) return;
 	this.newNameModel.value = this.partitionNames[event.item.name];
 	this.controller.modelChanged(this.newNameModel);
 	this.newNameChanged({value:event.item.name});
@@ -358,28 +401,48 @@ MainAssistant.prototype.newValueChanged = function(event)
 	this.resizeValue = event.value || 0;
 
 	var newFreeSpace = this.partitionSizes[this.resizeName] - this.resizeValue + this.freeSpace;
-	if (newFreeSpace >= 0) {
-		this.newValueLabel.innerHTML = "MiB ("+newFreeSpace + " MiB LEFT)";
+	if (newFreeSpace > 0) {
+		this.freeSpaceValue.innerHTML = newFreeSpace + " MiB";
 	}
 	else {
-		this.newValueLabel.innerHTML = "MiB (NO FREE SPACE)";
+		this.freeSpaceValue.innerHTML = "None";
 	}
 	
-	if ((this.resizeValue == 0) || (this.resizeValue == this.partitionSizes[this.resizeName])) {
+	if (event.value === "0") {
+		this.status.innerHTML = "Tap 'Delete Partition' to begin.";
+		this.resizeButtonModel.label = $L("Delete Partition");
+		this.resizeButtonModel.disabled = false;
+		this.controller.modelChanged(this.resizeButtonModel);
+	}
+	else if ((this.resizeValue == 0) || (this.resizeValue == this.partitionSizes[this.resizeName])) {
 		this.status.innerHTML = "Select partition and new size ...";
+		this.resizeButtonModel.label = $L("Resize Partition");
 		this.resizeButtonModel.disabled = true;
 		this.controller.modelChanged(this.resizeButtonModel);
 	}
 	else if (newFreeSpace < 0) {
 		this.status.innerHTML = "Not enough free space!";
+		this.resizeButtonModel.label = $L("No Free Space");
 		this.resizeButtonModel.disabled = true;
 		this.controller.modelChanged(this.resizeButtonModel);
 	}
 	else {
 		this.status.innerHTML = "Tap 'Resize Partition' to begin.";
+		this.resizeButtonModel.label = $L("Resize Partition");
 		this.resizeButtonModel.disabled = false;
 		this.controller.modelChanged(this.resizeButtonModel);
 	}
+};
+
+MainAssistant.prototype.checkTap = function(event)
+{
+	var name = this.resizeName;
+
+	this.status.innerHTML = "Checking "+this.partitionNames[name];
+	
+	// %%% Do stuff %%%
+
+	this.checkButton.mojo.deactivate();
 };
 
 MainAssistant.prototype.resizeTap = function(event)
@@ -387,7 +450,10 @@ MainAssistant.prototype.resizeTap = function(event)
 	var name = this.resizeName;
 	var value = this.newValueModel.value;
 
-	if (value < this.partitionSizes[name]) {
+	if (value == "0") {
+		this.status.innerHTML = "Removing "+this.partitionNames[name];
+	}
+	else if (value < this.partitionSizes[name]) {
 		this.status.innerHTML = "Reducing to "+this.showValue(value, "MiB");
 	}
 	else if (value > this.partitionSizes[name]) {
@@ -547,6 +613,7 @@ MainAssistant.prototype.cleanup = function(event)
 	this.controller.stopListening(this.volumeList, Mojo.Event.listTap, this.volumeTappedHandler);
 	this.controller.stopListening(this.newNameList, Mojo.Event.propertyChange, this.newNameChangedHandler);
 	this.controller.stopListening(this.newValueField, Mojo.Event.propertyChange, this.newValueChangedHandler);
+	this.controller.stopListening(this.checkButton,  Mojo.Event.tap, this.checkTapHandler);
 	this.controller.stopListening(this.resizeButton,  Mojo.Event.tap, this.resizeTapHandler);
 	this.controller.stopListening(this.mediaMountButton,  Mojo.Event.tap, this.mediaMountTapHandler);
 	this.controller.stopListening(this.ext3fsMountButton,  Mojo.Event.tap, this.ext3fsMountTapHandler);

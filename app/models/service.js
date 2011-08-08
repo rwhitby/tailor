@@ -39,6 +39,21 @@ TailorService.listMounts = function(callback)
     return request;
 };
 
+TailorService.checkFilesystem = function(callback, filesystem)
+{
+    var request = new Mojo.Service.Request(TailorService.identifier,
+	{
+	    method: 'checkFilesystem',
+		parameters: {
+			"filesystem": filesystem,
+			"subscribe": true
+		},
+	    onSuccess: callback,
+	    onFailure: callback
+	});
+    return request;
+};
+
 TailorService.unmountMedia = function(callback)
 {
     var request = new Mojo.Service.Request(TailorService.identifier,
