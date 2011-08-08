@@ -129,6 +129,7 @@ MainAssistant.prototype.setup = function()
 	this.newNameChangedHandler =  this.newNameChanged.bindAsEventListener(this);
 	this.newValueChangedHandler =  this.newValueChanged.bindAsEventListener(this);
 	this.checkTapHandler = this.checkTap.bindAsEventListener(this);
+	this.checkFilesystemHandler = this.checkFilesystem.bindAsEventListener(this);
 	this.resizeTapHandler = this.resizeTap.bindAsEventListener(this);
 	this.listMountsHandler = this.listMounts.bindAsEventListener(this);
 	this.mediaMountTapHandler = this.mediaMountTap.bindAsEventListener(this);
@@ -393,6 +394,15 @@ MainAssistant.prototype.newNameChanged = function(event)
 
 	this.statusTitle.innerHTML = this.partitionNames[this.resizeName]+" Partition Status";
 
+	if (this.resizeName == "swap") {
+		this.checkButtonModel.disabled = true;
+		this.controller.modelChanged(this.checkButtonModel);
+	}
+	else {
+		this.checkButtonModel.disabled = false;
+		this.controller.modelChanged(this.checkButtonModel);
+	}
+
 	this.newValueChanged({value: this.newValueModel.value});
 };
 
@@ -415,7 +425,7 @@ MainAssistant.prototype.newValueChanged = function(event)
 		this.controller.modelChanged(this.resizeButtonModel);
 	}
 	else if ((this.resizeValue == 0) || (this.resizeValue == this.partitionSizes[this.resizeName])) {
-		this.status.innerHTML = "Select partition and new size ...";
+		this.status.innerHTML = "Select partition ...";
 		this.resizeButtonModel.label = $L("Resize Partition");
 		this.resizeButtonModel.disabled = true;
 		this.controller.modelChanged(this.resizeButtonModel);
@@ -438,11 +448,55 @@ MainAssistant.prototype.checkTap = function(event)
 {
 	var name = this.resizeName;
 
-	this.status.innerHTML = "Checking "+this.partitionNames[name];
+	this.status.innerHTML = "Checking "+this.partitionNames[name]+" ...";
 	
-	// %%% Do stuff %%%
+	this.request = TailorService.checkFilesystem(this.checkFilesystemHandler, "/dev/mapper/store-"+name);
+}
 
-	this.checkButton.mojo.deactivate();
+MainAssistant.prototype.checkFilesystem = function(payload)
+{
+	if (payload.returnValue === false) {
+		// this.errorMessage('<b>Service Error (checkFilesystem):</b><br>'+payload.errorText, [ payload.stdErr ]);
+		this.errorMessage('<b>Filesystem Check Failed</b>');
+		this.status.innerHTML = "Filesystem Check Failed";
+		this.checkButton.mojo.deactivate();
+		return;
+	}
+
+	if (payload.stdErr) {
+		// this.status.innerHTML = payload.stdErr;
+	}
+	else if (payload.stdOut) {
+		// this.status.innerHTML = payload.stdOut;
+		if (payload.stdOut.match(/^Pass /)) {
+			this.status.innerHTML = payload.stdOut;
+		}
+		if (payload.stdOut.match(/^\s+\d+ bytes per cluster$/)) {
+			var matches = payload.stdOut.match(/\d+/g);
+			if (matches.length == 1) {
+				this.clusterSize = matches[0];
+			}
+		}
+		if (payload.stdOut.match(/ \d+ files, \d+.\d+ clusters/)) {
+			var matches = payload.stdOut.match(/\d+/g);
+			if (matches.length == 3) {
+				var freeSpace = (matches[2]-matches[1])*this.clusterSize;
+				this.status.innerHTML = "Free space: "+this.showValue(freeSpace, "B");
+			}
+		}
+		if (payload.stdOut.match(/^\s+\d+ blocks used .[0-9.]+%.$/)) {
+			this.status.innerHTML = payload.stdOut;
+			var matches = payload.stdOut.match(/[0-9.]+/g);
+			if (matches.length == 2) {
+				var freeSpace = 4096*matches[0]*((100-matches[1])/matches[1]);
+				this.status.innerHTML = "Free space: "+this.showValue(freeSpace, "B");
+			}
+		}
+	}
+	
+	if (payload.stage == "end") {
+		this.checkButton.mojo.deactivate();
+	}
 };
 
 MainAssistant.prototype.resizeTap = function(event)
@@ -559,6 +613,8 @@ MainAssistant.prototype.showValue = function(value, units)
 	while ((value > 1024) || (value < -1024)) {
 		value = value / 1024;
 		switch (units) {
+		case "B": units = "KiB"; break;
+		case "KiB": units = "MiB"; break;
 		case "MiB": units = "GiB"; break;
 		}
 	}
