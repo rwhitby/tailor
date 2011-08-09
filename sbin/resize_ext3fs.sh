@@ -48,35 +48,87 @@ else
    echo "not enough space on device"
 fi   
        
-
 if [ ${TARGET_SIZE} > ${EXISTING_SIZE} ]
       echo 'unmounting ext3fs'
       umount /media/ext3fs
+
+      echo 'checking the ext3fs before resizing LV'
+      fsck.ext3fs  /dev/mapper/store-ext3fs
+
+      if [ &2 -ne 0]
+         echo 'failed fsck.ext3 before resizing ext3 LV'
+         exit1
+      else
+      fi
+
       echo 'resizing the Logical Volume'
       lvresize -L ${TARGET_SIZE}M /dev/mapper/store-ext3fs
-      echo 'checking the ext3fs before resizing FS'
+
+      echo 'checking the ext3fs after resizing LV and before resizing FS'
       fsck.ext3fs  /dev/mapper/store-ext3fs
+
+      if [ &2 -ne 0]
+         echo 'failed fsck.ext3 after resizing LV and before resizing ext3 FS'
+         exit1
+      else
+      fi
+
       echo 'resizing ext3 FS'
       resize2fs /dev/mapper/store-ext3fs ${TARGET_FS_SIZE}M
+      
       echo 'checking FS after resize'
       fsck.ext3fs /dev/mapper/store-ext3fs
+
+      if [ &2 -ne 0]
+         echo 'failed fsck.ext3 after resizing ext3 FS'
+         exit 1
+      else
+      fi
+
       echo 'remounting /media/ext3fs'
       mount -t ext3 /dev/mapper/store-ext3fs /media/ext3fs
+
       echo 'done!'
+      exit 0
 else
       echo 'unmounting ext3fs'
       umount /media/ext3fs
+
       echo 'running fsck before resizing'
       fsck.ext3 /dev/mapper/store-ext3fs
+
+      if [ &2 -ne 0]
+         echo 'failed fsck.ext3 before resizing ext3 FS'
+         exit 1
+      else
+      fi
+
       echo 'resizing ext3fs FS'
       resize2fs /dev/mapper/store-ext3fs ${TARGET_FS_SIZE}M
+
       echo 'running fsck after resizing FS'
       fsck.ext3 /dev/mapper/store-ext3fs
+
+      if [ &2 -ne 0]
+         echo 'failed fsck.ext3 before resizing ext3 LV'
+         exit 1
+      else
+      fi
+
       echo 'reducing LV size'
       lvreduce ${TARGET_SIZE}M /dev/mapper/store-ext3fs
+
       echo 'running final fsck of Filesystem'
       fsck.ext3 /dev/mapper/store-ext3fs
+
+      if [ &2 -ne 0]
+         echo 'failed fsck.ext3 after resizing ext3 FS'
+         exit 1
+      else
+      fi
+
       echo 'remounting ext3fs'
       mount -t ext3 /dev/mapper/store-ext3fs /media/ext3fs
+
       echo 'ext3fs mounted'
 fi
