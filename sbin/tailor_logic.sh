@@ -19,8 +19,10 @@ app provides: desired target state for all LV’s that are being manipulated: LV
        compare  df -m | cut, target_fssize
        if greater then
 3) determine state of any creation/resize/removal of EXT3FS
+
+
   a) is LV @ target size (or removed)?
-        lvsize =  lvscan | grep media | clip
+        lvsize =  lvscan | grep media | cut
         if expressed in G :lvsize = lvsize*1024
         else lvsize = lvsize
         [lvsize = target_lvsize_media]
