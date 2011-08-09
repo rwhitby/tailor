@@ -10,42 +10,53 @@ existing_size = "$2"
 target_fs_size = target_size - 10
 
 if [ "${TARGET_SIZE}" = 0 ]
-   lv_exist= lvscan | grep ext3fs
-   if [ "${LV_EXIST}" -ne '']
-      lvremove -f store/ext3fs
-      echo "removed ext3fs"
-      exit 0
-   else
-      echo "ext3fs does not exist"
-      exit 1
-   fi
-
-if [ ${EXISTING_SIZE} = 0 &&  ${TARGET_SIZE} > 0 ]
-   if [ ${FREESPACE} > ${REQUESTED_SPACE} ]
-       lvcreate -L ${REQUESTED_SPACE}M --name ext3fs store
-   else
-       echo 'not enough space on device'
-       exit 1
-   fi
-
-   echo 'creating ext3 filesystem'
-   mke2fs -j /dev/mapper/store-ext3fs
-
-   echo 'add mountpoint to fstab'
-
-   if grep -q ${FSTAB_ENTRY} /ext/fstab ; then
-      echo "mountpoint already created"
-   else
-      ${FSTAB_ENTRY} > cat /etc/fstab
-      echo "new mountpoint added to fstab"
-   fi
-
-   echo 'create /media/ext3fs directory'
-   mkdir -p /media/ext3fs
-
-   echo 'mount ext3fs on /media/ext3fs'
+      lv_exist= lvscan | grep ext3fs
+      if [ "${LV_EXIST}" -ne '']
+         lvremove -f store/ext3fs
+         echo "removed ext3fs"
+         exit 0
+      else
+         echo "ext3fs does not exist"
+         exit 1
+      fi
 else
-   echo "not enough space on device"
+fi
+
+if [ "${EXISTING_SIZE}" = 0  && " ${TARGET_SIZE}" > 0 ]
+      if [ "${FREESPACE}" > "${REQUESTED_SPACE}" ]
+          lvcreate -L ${REQUESTED_SPACE}M --name ext3fs store
+      else
+          echo 'not enough space on device'
+          exit 1
+      fi
+
+      echo 'creating ext3 filesystem'
+      mke2fs -j /dev/mapper/store-ext3fs
+
+      echo 'checking the ext3fs after creating FS'
+      fsck.ext3fs  /dev/mapper/store-ext3fs
+
+      if [ &2 -ne 0]
+         echo 'failed fsck.ext3 after creating ext3 FS'
+         exit 1
+      else
+      fi
+
+      echo 'add mountpoint to fstab'
+      if grep -q ${FSTAB_ENTRY} /ext/fstab ; then
+         echo "mountpoint already created"
+      else
+         ${FSTAB_ENTRY} > cat /etc/fstab
+         echo "new mountpoint added to fstab"
+      fi
+
+      echo 'create /media/ext3fs directory'
+      mkdir -p /media/ext3fs
+
+      echo 'mount ext3fs on /media/ext3fs'
+else
+      echo 'not enough space on device'
+      exit 1
 fi   
        
 if [ ${TARGET_SIZE} > ${EXISTING_SIZE} ]
