@@ -23,6 +23,11 @@
 	color: #888;
 	text-transform: lowercase;
 }
+.main .palm-page-header-wrapper .title .heartbeat
+{
+	padding-right: 15px;
+	float: right;
+}
 .main .palm-page-header-wrapper .title.sub
 {
 	font-size: 14px;

@@ -2,6 +2,17 @@ TailorService.identifier = 'palm://org.webosinternals.tailor.node';
 
 function TailorService(){};
 
+TailorService.status = function(callback)
+{
+    var request = new Mojo.Service.Request(TailorService.identifier,
+	{
+	    method: 'status',
+	    onSuccess: callback,
+	    onFailure: callback
+	});
+    return request;
+};
+
 TailorService.listGroups = function(callback)
 {
     var request = new Mojo.Service.Request(TailorService.identifier,

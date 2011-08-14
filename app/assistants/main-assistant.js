@@ -83,6 +83,10 @@ function MainAssistant()
 	this.mountPoints = false;
 
 	this.rebootRequired = false;
+
+	this.timer = false;
+	this.heartbeatValue = "*";
+
 };
 
 MainAssistant.prototype.setup = function()
@@ -94,6 +98,7 @@ MainAssistant.prototype.setup = function()
 	this.iconElement =		this.controller.get('icon');
 	this.titleElement =		this.controller.get('main-title');
 	this.versionElement =	this.controller.get('version');
+	this.heartbeatElement =	this.controller.get('heartbeat');
 	this.subTitleElement =	this.controller.get('subTitle');
 
 	this.overlay = 			this.controller.get('overlay'); this.overlay.hide();
@@ -120,6 +125,7 @@ MainAssistant.prototype.setup = function()
 	// set version string random subtitle
 	this.titleElement.innerHTML = Mojo.Controller.appInfo.title;
 	this.versionElement.innerHTML = "v" + Mojo.Controller.appInfo.version;
+	this.heartbeatElement.innerHTML = this.heartbeatValue;
 	this.subTitleElement.innerHTML = this.getRandomSubTitle();
 	
 	// setup handlers
@@ -177,13 +183,36 @@ MainAssistant.prototype.setup = function()
 
     this.controller.setupWidget('mountList', {
 			itemTemplate: "main/rowTemplate", swipeToDelete: false, reorderable: false }, this.mountsModel);
-
 };
 
 MainAssistant.prototype.activate = function()
 {
+	this.timer = this.controller.window.setTimeout(this.heartbeatTick.bind(this), 1000);
 	this.refresh();
 };
+
+MainAssistant.prototype.deactivate = function()
+{
+	this.controller.window.clearTimeout(this.timer);
+};
+
+MainAssistant.prototype.heartbeatTick = function()
+{
+	if (this.heartbeatValue == "*") {
+		this.heartbeatValue = " ";
+	}
+	else {
+		this.heartbeatValue = "*";
+	}
+	this.heartbeatElement.innerHTML = this.heartbeatValue;
+
+	this.heartbeatRequest = TailorService.status(this.heartbeatTock.bind(this));
+};	
+
+MainAssistant.prototype.heartbeatTock = function()
+{
+	this.timer = this.controller.window.setTimeout(this.heartbeatTick.bind(this), 1000);
+};	
 
 MainAssistant.prototype.refresh = function()
 {

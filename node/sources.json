@@ -1,6 +1,7 @@
 [
 { "library": { "name": "foundations", "version": "1.0" } },
 { "source": "prologue.js" },
+{ "source": "Status.js" },
 { "source": "ListGroups.js" },
 { "source": "ListVolumes.js" },
 { "source": "ListMounts.js" },
