@@ -7,7 +7,7 @@ ListVolumes.prototype.run = function(future) {
     console.log("Tailor/ListVolumes: Called by "+this.controller.message.applicationID().split(" ")[0]+
 		" via "+this.controller.message.senderServiceName());
 
-    var cmd = "/usr/sbin/lvdisplay "+args.group+" -c";
+    var cmd = "/usr/sbin/lvm.static lvdisplay "+args.group+" -c";
 
     console.log("Tailor/ListVolumes: Running command: "+cmd);
 

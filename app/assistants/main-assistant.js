@@ -34,13 +34,28 @@ function MainAssistant()
 
 	this.newValueModel = { disabled: true };
 
-	this.checkButtonModel = {
+	this.checkFilesystemButtonModel = {
 		label: $L("Check Partition"),
 		disabled: true
 	};
 
-	this.resizeButtonModel = {
+	this.unmountFilesystemButtonModel = {
+		label: $L("Unmount Filesystem"),
+		disabled: true
+	};
+
+	this.resizeFilesystemButtonModel = {
+		label: $L("Resize Filesystem"),
+		disabled: true
+	};
+
+	this.resizePartitionButtonModel = {
 		label: $L("Resize Partition"),
+		disabled: true
+	};
+
+	this.mountFilesystemButtonModel = {
+		label: $L("Mount Filesystem"),
 		disabled: true
 	};
 
@@ -65,7 +80,7 @@ function MainAssistant()
 	this.totalSpace = 0;
 	this.freeSpace = 0;
 	this.peSize = 0;
-	this.resizeName = false;
+	this.targetPartition = false;
 
 	this.partitionNames = {
 		"media":"USB (media)",
@@ -110,8 +125,12 @@ MainAssistant.prototype.setup = function()
 	this.newNameList =		this.controller.get('newNameList');
 	this.newValueLabel =	this.controller.get('newValueLabel');
 	this.newValueField =	this.controller.get('newValueField');
-	this.checkButton =		this.controller.get('checkButton');
-	this.resizeButton =		this.controller.get('resizeButton');
+
+	this.unmountFilesystemButton = this.controller.get('unmountFilesystemButton');
+	this.checkFilesystemButton =   this.controller.get('checkFilesystemButton');
+	this.resizeFilesystemButton =  this.controller.get('resizeFilesystemButton');
+	this.resizePartitionButton =   this.controller.get('resizePartitionButton');
+	this.mountFilesystemButton =   this.controller.get('mountFilesystemButton');
 
 	this.mediaMountButton  = this.controller.get('mediaMountButton');
 	this.ext3fsMountButton = this.controller.get('ext3fsMountButton');
@@ -134,9 +153,14 @@ MainAssistant.prototype.setup = function()
 	this.volumeTappedHandler = this.volumeTapped.bindAsEventListener(this);
 	this.newNameChangedHandler =  this.newNameChanged.bindAsEventListener(this);
 	this.newValueChangedHandler =  this.newValueChanged.bindAsEventListener(this);
-	this.checkTapHandler = this.checkTap.bindAsEventListener(this);
+	this.unmountFilesystemTapHandler = this.unmountFilesystemTap.bindAsEventListener(this);
+	this.unmountFilesystemHandler = this.unmountFilesystem.bindAsEventListener(this);
+	this.checkFilesystemTapHandler = this.checkFilesystemTap.bindAsEventListener(this);
 	this.checkFilesystemHandler = this.checkFilesystem.bindAsEventListener(this);
-	this.resizeTapHandler = this.resizeTap.bindAsEventListener(this);
+	this.resizeFilesystemTapHandler = this.resizeFilesystemTap.bindAsEventListener(this);
+	this.resizePartitionTapHandler = this.resizePartitionTap.bindAsEventListener(this);
+	this.mountFilesystemTapHandler = this.mountFilesystemTap.bindAsEventListener(this);
+	this.mountFilesystemHandler = this.mountFilesystem.bindAsEventListener(this);
 	this.listMountsHandler = this.listMounts.bindAsEventListener(this);
 	this.mediaMountTapHandler = this.mediaMountTap.bindAsEventListener(this);
 	this.mediaMountHandler = this.mediaMount.bindAsEventListener(this);
@@ -170,10 +194,16 @@ MainAssistant.prototype.setup = function()
 				},
 		this.newValueModel);
 	this.controller.listen(this.newValueField, Mojo.Event.propertyChange, this.newValueChangedHandler);
-	this.controller.setupWidget('checkButton', { type: Mojo.Widget.activityButton }, this.checkButtonModel);
-	this.controller.listen(this.checkButton, Mojo.Event.tap, this.checkTapHandler);
-	this.controller.setupWidget('resizeButton', { type: Mojo.Widget.activityButton }, this.resizeButtonModel);
-	this.controller.listen(this.resizeButton, Mojo.Event.tap, this.resizeTapHandler);
+	this.controller.setupWidget('unmountFilesystemButton', { type: Mojo.Widget.activityButton }, this.unmountFilesystemButtonModel);
+	this.controller.listen(this.unmountFilesystemButton, Mojo.Event.tap, this.unmountFilesystemTapHandler);
+	this.controller.setupWidget('checkFilesystemButton', { type: Mojo.Widget.activityButton }, this.checkFilesystemButtonModel);
+	this.controller.listen(this.checkFilesystemButton, Mojo.Event.tap, this.checkFilesystemTapHandler);
+	this.controller.setupWidget('resizeFilesystemButton', { type: Mojo.Widget.activityButton }, this.resizeFilesystemButtonModel);
+	this.controller.listen(this.resizeFilesystemButton, Mojo.Event.tap, this.resizeFilesystemTapHandler);
+	this.controller.setupWidget('resizePartitionButton', { type: Mojo.Widget.activityButton }, this.resizePartitionButtonModel);
+	this.controller.listen(this.resizePartitionButton, Mojo.Event.tap, this.resizePartitionTapHandler);
+	this.controller.setupWidget('mountFilesystemButton', { type: Mojo.Widget.activityButton }, this.mountFilesystemButtonModel);
+	this.controller.listen(this.mountFilesystemButton, Mojo.Event.tap, this.mountFilesystemTapHandler);
 	this.controller.setupWidget('mediaMountButton', { type: Mojo.Widget.activityButton }, this.mediaMountButtonModel);
 	this.controller.listen(this.mediaMountButton, Mojo.Event.tap, this.mediaMountTapHandler);
 	this.controller.setupWidget('ext3fsMountButton', { type: Mojo.Widget.activityButton }, this.ext3fsMountButtonModel);
@@ -187,13 +217,13 @@ MainAssistant.prototype.setup = function()
 
 MainAssistant.prototype.activate = function()
 {
-	this.timer = this.controller.window.setTimeout(this.heartbeatTick.bind(this), 1000);
+	this.timer = this.controller.window.setInterval(this.heartbeatTick.bind(this), 5000);
 	this.refresh();
 };
 
 MainAssistant.prototype.deactivate = function()
 {
-	this.controller.window.clearTimeout(this.timer);
+	this.controller.window.clearInterval(this.timer);
 };
 
 MainAssistant.prototype.heartbeatTick = function()
@@ -204,14 +234,12 @@ MainAssistant.prototype.heartbeatTick = function()
 	else {
 		this.heartbeatValue = "*";
 	}
-	this.heartbeatElement.innerHTML = this.heartbeatValue;
-
 	this.heartbeatRequest = TailorService.status(this.heartbeatTock.bind(this));
 };	
 
 MainAssistant.prototype.heartbeatTock = function()
 {
-	this.timer = this.controller.window.setTimeout(this.heartbeatTick.bind(this), 1000);
+	this.heartbeatElement.innerHTML = this.heartbeatValue;
 };	
 
 MainAssistant.prototype.refresh = function()
@@ -230,10 +258,16 @@ MainAssistant.prototype.refresh = function()
 	this.controller.modelChanged(this.newNameModel);
 	this.newValueModel.disabled = true;
 	this.controller.modelChanged(this.newValueModel);
-	this.checkButtonModel.disabled = true;
-	this.controller.modelChanged(this.checkButtonModel);
-	this.resizeButtonModel.disabled = true;
-	this.controller.modelChanged(this.resizeButtonModel);
+	this.unmountFilesystemButtonModel.disabled = true;
+	this.controller.modelChanged(this.unmountFilesystemButtonModel);
+	this.checkFilesystemButtonModel.disabled = true;
+	this.controller.modelChanged(this.checkFilesystemButtonModel);
+	this.resizeFilesystemButtonModel.disabled = true;
+	this.controller.modelChanged(this.resizeFilesystemButtonModel);
+	this.resizePartitionButtonModel.disabled = true;
+	this.controller.modelChanged(this.resizePartitionButtonModel);
+	this.mountFilesystemButtonModel.disabled = true;
+	this.controller.modelChanged(this.mountFilesystemButtonModel);
 	this.mountPoints = {
 		"/media/internal": false,
 		"/opt": false,
@@ -251,6 +285,10 @@ MainAssistant.prototype.refresh = function()
 
 MainAssistant.prototype.listGroups = function(payload)
 {
+	if (Mojo.Environment.DeviceInfo.modelNameAscii == 'Emulator') {
+		payload.stdOut = [ "store:::::::::::15507456:8192:::111:" ]
+	}
+
 	if (payload.returnValue === false) {
 		this.errorMessage('<b>Service Error (listGroups):</b><br>'+payload.errorText, payload.stdErr);
 		this.overlay.hide();
@@ -274,6 +312,15 @@ MainAssistant.prototype.listGroups = function(payload)
 
 MainAssistant.prototype.listVolumes = function(payload)
 {
+	if (Mojo.Environment.DeviceInfo.modelNameAscii == 'Emulator') {
+		payload.returnValue = true;
+		payload.stdOut = [
+						  "/dev/store/media:::::::1408:::::",
+						  "/dev/store/swap:::::::13:::::",
+						  "/dev/store/ext3fs:::::::256:::::",
+						  ];
+	}
+
 	if (payload.returnValue === false) {
 		this.errorMessage('<b>Service Error (listVolumes):</b><br>'+payload.errorText, payload.stdErr);
 		this.overlay.hide();
@@ -306,8 +353,8 @@ MainAssistant.prototype.listVolumes = function(payload)
 	this.newNameModel.disabled = false;
 	this.controller.modelChanged(this.newNameModel);
 
-	this.checkButtonModel.disabled = false;
-	this.controller.modelChanged(this.checkButtonModel);
+	this.checkFilesystemButtonModel.disabled = false;
+	this.controller.modelChanged(this.checkFilesystemButtonModel);
 
 	this.newNameChanged({value:this.newNameModel.choices[0].value});
 
@@ -390,10 +437,16 @@ MainAssistant.prototype.listMounts = function(payload)
 		this.controller.modelChanged(this.newNameModel);
 		this.newValueModel.disabled = true;
 		this.controller.modelChanged(this.newValueModel);
-		this.checkButtonModel.disabled = true;
-		this.controller.modelChanged(this.checkButtonModel);
-		this.resizeButtonModel.disabled = true;
-		this.controller.modelChanged(this.resizeButtonModel);
+		this.unmountFilesystemButtonModel.disabled = true;
+		this.controller.modelChanged(this.unmountFilesystemButtonModel);
+		this.checkFilesystemButtonModel.disabled = true;
+		this.controller.modelChanged(this.checkFilesystemButtonModel);
+		this.resizeFilesystemButtonModel.disabled = true;
+		this.controller.modelChanged(this.resizeFilesystemButtonModel);
+		this.resizePartitionButtonModel.disabled = true;
+		this.controller.modelChanged(this.resizePartitionButtonModel);
+		this.mountFilesystemButtonModel.disabled = true;
+		this.controller.modelChanged(this.mountFilesystemButtonModel);
 		this.mediaMountButtonModel.disabled = true;
 		this.controller.modelChanged(this.mediaMountButtonModel);
 		this.ext3fsMountButtonModel.disabled = true;
@@ -416,20 +469,20 @@ MainAssistant.prototype.volumeTapped = function(event)
 
 MainAssistant.prototype.newNameChanged = function(event)
 {
-	this.resizeName = event.value;
-	this.newValueModel.value = this.partitionSizes[this.resizeName];
+	this.targetPartition = event.value;
+	this.newValueModel.value = this.partitionSizes[this.targetPartition];
 	this.newValueModel.disabled = false;
 	this.controller.modelChanged(this.newValueModel);
 
-	this.statusTitle.innerHTML = this.partitionNames[this.resizeName]+" Partition Status";
+	this.statusTitle.innerHTML = this.partitionNames[this.targetPartition]+" Partition Status";
 
-	if (this.resizeName == "swap") {
-		this.checkButtonModel.disabled = true;
-		this.controller.modelChanged(this.checkButtonModel);
+	if (this.targetPartition == "swap") {
+		this.checkFilesystemButtonModel.disabled = true;
+		this.controller.modelChanged(this.checkFilesystemButtonModel);
 	}
 	else {
-		this.checkButtonModel.disabled = false;
-		this.controller.modelChanged(this.checkButtonModel);
+		this.checkFilesystemButtonModel.disabled = false;
+		this.controller.modelChanged(this.checkFilesystemButtonModel);
 	}
 
 	this.newValueChanged({value: this.newValueModel.value});
@@ -439,7 +492,7 @@ MainAssistant.prototype.newValueChanged = function(event)
 {
 	this.resizeValue = event.value || 0;
 
-	var newFreeSpace = this.partitionSizes[this.resizeName] - this.resizeValue + this.freeSpace;
+	var newFreeSpace = this.partitionSizes[this.targetPartition] - this.resizeValue + this.freeSpace;
 	if (newFreeSpace > 0) {
 		this.freeSpaceValue.innerHTML = newFreeSpace + " MiB";
 	}
@@ -449,33 +502,67 @@ MainAssistant.prototype.newValueChanged = function(event)
 	
 	if (event.value === "0") {
 		this.status.innerHTML = "Tap 'Delete Partition' to begin.";
-		this.resizeButtonModel.label = $L("Delete Partition");
-		this.resizeButtonModel.disabled = false;
-		this.controller.modelChanged(this.resizeButtonModel);
+		this.resizePartitionButtonModel.label = $L("Delete Partition");
+		this.resizePartitionButtonModel.disabled = false;
+		this.controller.modelChanged(this.resizePartitionButtonModel);
 	}
-	else if ((this.resizeValue == 0) || (this.resizeValue == this.partitionSizes[this.resizeName])) {
+	else if ((this.resizeValue == 0) || (this.resizeValue == this.partitionSizes[this.targetPartition])) {
 		this.status.innerHTML = "Select partition ...";
-		this.resizeButtonModel.label = $L("Resize Partition");
-		this.resizeButtonModel.disabled = true;
-		this.controller.modelChanged(this.resizeButtonModel);
+		this.resizePartitionButtonModel.label = $L("Resize Partition");
+		this.resizePartitionButtonModel.disabled = true;
+		this.controller.modelChanged(this.resizePartitionButtonModel);
 	}
 	else if (newFreeSpace < 0) {
 		this.status.innerHTML = "Not enough free space!";
-		this.resizeButtonModel.label = $L("No Free Space");
-		this.resizeButtonModel.disabled = true;
-		this.controller.modelChanged(this.resizeButtonModel);
+		this.resizePartitionButtonModel.label = $L("No Free Space");
+		this.resizePartitionButtonModel.disabled = true;
+		this.controller.modelChanged(this.resizePartitionButtonModel);
 	}
 	else {
 		this.status.innerHTML = "Tap 'Resize Partition' to begin.";
-		this.resizeButtonModel.label = $L("Resize Partition");
-		this.resizeButtonModel.disabled = false;
-		this.controller.modelChanged(this.resizeButtonModel);
+		this.resizePartitionButtonModel.label = $L("Resize Partition");
+		this.resizePartitionButtonModel.disabled = false;
+		this.controller.modelChanged(this.resizePartitionButtonModel);
 	}
 };
 
-MainAssistant.prototype.checkTap = function(event)
+MainAssistant.prototype.unmountFilesystemTap = function(event)
 {
-	var name = this.resizeName;
+	var name = this.targetPartition;
+
+	this.status.innerHTML = "Unmounting "+this.partitionNames[name]+" ...";
+	
+}
+
+MainAssistant.prototype.unmountFilesystem = function(payload)
+{
+	if (Mojo.Environment.DeviceInfo.modelNameAscii == 'Emulator') {
+		this.request.cancel();
+		payload = {};
+		payload.returnValue = true;
+	}
+
+	if (payload.returnValue === false) {
+		this.errorMessage('<b>Service Error (unmountFilesystem):</b><br>'+payload.errorText, [ payload.stdErr ]);
+		this.unmountFilesystemButton.mojo.deactivate();
+		return;
+	}
+
+	if (payload.stdErr) {
+		// this.status.innerHTML = payload.stdErr;
+	}
+	else if (payload.stdOut) {
+		// this.status.innerHTML = payload.stdOut;
+	}
+	
+	if (payload.stage == "end") {
+		this.unmountFilesystemButton.mojo.deactivate();
+	}
+};
+
+MainAssistant.prototype.checkFilesystemTap = function(event)
+{
+	var name = this.targetPartition;
 
 	this.status.innerHTML = "Checking "+this.partitionNames[name]+" ...";
 	
@@ -484,11 +571,19 @@ MainAssistant.prototype.checkTap = function(event)
 
 MainAssistant.prototype.checkFilesystem = function(payload)
 {
+	if (Mojo.Environment.DeviceInfo.modelNameAscii == 'Emulator') {
+		this.request.cancel();
+		payload = {};
+		payload.returnValue = true;
+		payload.stdOut = " 42 blocks used (42.0%)";
+		payload.stage = "end";
+	}
+
 	if (payload.returnValue === false) {
 		// this.errorMessage('<b>Service Error (checkFilesystem):</b><br>'+payload.errorText, [ payload.stdErr ]);
 		this.errorMessage('<b>Filesystem Check Failed</b>');
 		this.status.innerHTML = "Filesystem Check Failed";
-		this.checkButton.mojo.deactivate();
+		this.checkFilesystemButton.mojo.deactivate();
 		return;
 	}
 
@@ -524,13 +619,13 @@ MainAssistant.prototype.checkFilesystem = function(payload)
 	}
 	
 	if (payload.stage == "end") {
-		this.checkButton.mojo.deactivate();
+		this.checkFilesystemButton.mojo.deactivate();
 	}
 };
 
-MainAssistant.prototype.resizeTap = function(event)
+MainAssistant.prototype.resizeFilesystemTap = function(event)
 {
-	var name = this.resizeName;
+	var name = this.targetPartition;
 	var value = this.newValueModel.value;
 
 	if (value == "0") {
@@ -548,7 +643,65 @@ MainAssistant.prototype.resizeTap = function(event)
 	
 	// %%% Do stuff %%%
 
-	this.resizeButton.mojo.deactivate();
+	this.resizeFilesystemButton.mojo.deactivate();
+};
+
+MainAssistant.prototype.resizePartitionTap = function(event)
+{
+	var name = this.targetPartition;
+	var value = this.newValueModel.value;
+
+	if (value == "0") {
+		this.status.innerHTML = "Removing "+this.partitionNames[name];
+	}
+	else if (value < this.partitionSizes[name]) {
+		this.status.innerHTML = "Reducing to "+this.showValue(value, "MiB");
+	}
+	else if (value > this.partitionSizes[name]) {
+		this.status.innerHTML = "Extending to "+this.showValue(value, "MiB");
+	}
+	else {
+		this.status.innerHTML = "Unchanged at "+this.showValue(value, "MiB");
+	}
+	
+	// %%% Do stuff %%%
+
+	this.resizePartitionButton.mojo.deactivate();
+};
+
+MainAssistant.prototype.mountFilesystemTap = function(event)
+{
+	var name = this.targetPartition;
+
+	this.status.innerHTML = "Mounting "+this.partitionNames[name]+" ...";
+	
+	// %%% Do stuff %%%
+}
+
+MainAssistant.prototype.mountFilesystem = function(payload)
+{
+	if (Mojo.Environment.DeviceInfo.modelNameAscii == 'Emulator') {
+		this.request.cancel();
+		payload = {};
+		payload.returnValue = true;
+	}
+
+	if (payload.returnValue === false) {
+		this.errorMessage('<b>Service Error (mountFilesystem):</b><br>'+payload.errorText, [ payload.stdErr ]);
+		this.mountFilesystemButton.mojo.deactivate();
+		return;
+	}
+
+	if (payload.stdErr) {
+		// this.status.innerHTML = payload.stdErr;
+	}
+	else if (payload.stdOut) {
+		// this.status.innerHTML = payload.stdOut;
+	}
+	
+	if (payload.stage == "end") {
+		this.mountFilesystemButton.mojo.deactivate();
+	}
 };
 
 MainAssistant.prototype.mediaMountTap = function(event)
@@ -698,8 +851,9 @@ MainAssistant.prototype.cleanup = function(event)
 	this.controller.stopListening(this.volumeList, Mojo.Event.listTap, this.volumeTappedHandler);
 	this.controller.stopListening(this.newNameList, Mojo.Event.propertyChange, this.newNameChangedHandler);
 	this.controller.stopListening(this.newValueField, Mojo.Event.propertyChange, this.newValueChangedHandler);
-	this.controller.stopListening(this.checkButton,  Mojo.Event.tap, this.checkTapHandler);
-	this.controller.stopListening(this.resizeButton,  Mojo.Event.tap, this.resizeTapHandler);
+	this.controller.stopListening(this.checkFilesystemButton,  Mojo.Event.tap, this.checkFilesystemTapHandler);
+	this.controller.stopListening(this.resizeFilesystemButton,  Mojo.Event.tap, this.resizeFilesystemTapHandler);
+	this.controller.stopListening(this.resizePartitionButton,  Mojo.Event.tap, this.resizePartitionTapHandler);
 	this.controller.stopListening(this.mediaMountButton,  Mojo.Event.tap, this.mediaMountTapHandler);
 	this.controller.stopListening(this.ext3fsMountButton,  Mojo.Event.tap, this.ext3fsMountTapHandler);
 	this.controller.stopListening(this.optwareMountButton,  Mojo.Event.tap, this.optwareMountTapHandler);

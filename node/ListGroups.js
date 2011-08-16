@@ -5,7 +5,7 @@ ListGroups.prototype.run = function(future) {
     console.log("Tailor/ListGroups: Called by "+this.controller.message.applicationID().split(" ")[0]+
 		" via "+this.controller.message.senderServiceName());
 
-    var cmd = "/usr/sbin/vgdisplay -c";
+    var cmd = "/usr/sbin/lvm.static vgdisplay -c";
 
     console.log("Tailor/ListGroups: Running command: "+cmd);
 
