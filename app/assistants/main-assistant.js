@@ -30,6 +30,8 @@ function MainAssistant()
 	// setup volumes model
 	this.volumesModel = {items:[]};
 	
+	this.freeSpaceModel = {label: "Unused Space:", title: "None", labelClass: 'left', titleClass: 'right'};
+
 	this.newNameModel = { choices: [], disabled: true };
 
 	this.newValueModel = { disabled: true };
@@ -121,7 +123,6 @@ MainAssistant.prototype.setup = function()
 
 	this.volumeList =		this.controller.get('volumeList');
 
-	this.freeSpaceValue =	this.controller.get('freeSpaceValue');
 	this.newNameList =		this.controller.get('newNameList');
 	this.newValueLabel =	this.controller.get('newValueLabel');
 	this.newValueField =	this.controller.get('newValueField');
@@ -346,6 +347,14 @@ MainAssistant.prototype.listVolumes = function(payload)
 		}
 	}
 
+	if (this.freeSpace) {
+		this.freeSpaceModel.title = this.showValue(this.freeSpace, "MiB");
+	}
+	else {
+		this.freeSpaceModel.title = "None";
+	}
+	this.volumesModel.items.push(this.freeSpaceModel);
+
 	this.volumeList.mojo.noticeUpdatedItems(0, this.volumesModel.items);
 	this.volumeList.mojo.setLength(this.volumesModel.items.length);
 
@@ -496,9 +505,11 @@ MainAssistant.prototype.listMounts = function(payload)
 MainAssistant.prototype.volumeTapped = function(event)
 {
 	if (this.rebootRequired) return;
-	this.newNameModel.value = this.partitionNames[event.item.name];
-	this.controller.modelChanged(this.newNameModel);
-	this.newNameChanged({value:event.item.name});
+	if (event.item.name) {
+		this.newNameModel.value = this.partitionNames[event.item.name];
+		this.controller.modelChanged(this.newNameModel);
+		this.newNameChanged({value:event.item.name});
+	}
 };
 
 MainAssistant.prototype.newNameChanged = function(event)
@@ -550,11 +561,13 @@ MainAssistant.prototype.newValueChanged = function(event)
 
 	var newFreeSpace = this.partitionSizes[this.targetPartition] - this.resizeValue + this.freeSpace;
 	if (newFreeSpace > 0) {
-		this.freeSpaceValue.innerHTML = newFreeSpace + " MiB";
+		this.freeSpaceModel.title = newFreeSpace + " MiB";
 	}
 	else {
-		this.freeSpaceValue.innerHTML = "None";
+		this.freeSpaceModel.title = "None";
 	}
+	this.controller.modelChanged(this.freeSpaceModel);
+	this.volumeList.mojo.noticeUpdatedItems(0, this.volumesModel.items);
 	
 	if (event.value === "0") {
 		this.status.innerHTML = "Tap 'Delete Partition' to begin.";
