@@ -1,13 +1,15 @@
 #!bin/sh
 
 # $1 is new requested size
-requested_size = "$1"
-# $2 is requested size + 100MBa
-existing_size = "$2"
+TARGET_SIZE = "$1"
+# $2 is existing size of partition 
+EXISTING_SIZE = "$2"
 # space so we dont' run into the wall
-requested_fs_size = requested_size - 100
+TARGET_FS_SIZE = `$TARGET_SIZE - 100`
 
-if [ ${REQUESTED_SIZE} > ${EXISTING_SIZE} ]
+if [ ${TARGET_SIZE} > ${EXISTING_SIZE} ]
+then
+#Target is Larger than Existing
     echo 'stop crpytofs'
     pkill -SIGUSR1 cryptofs
     echo 'unmount so we can fsck the partition before we resize'
@@ -18,7 +20,7 @@ if [ ${REQUESTED_SIZE} > ${EXISTING_SIZE} ]
     echo 'check vfat fs after lvrsize'
     /usr/sbin/fsck.vfat /dev/mapper/store-media
     echo 'resize vfat fs to new target size'
-    resizefat -p  /dev/mapper/store-media ${REQUESTED_FS_SIZE}M
+    resizefat -p  /dev/mapper/store-media ${TARGET_FS_SIZE}M
     echo 'check vfat fs after resize'
     /usr/sbin/fsck.vfat /dev/mapper/store-media 
     echo 'remount /media/internal'
@@ -27,6 +29,7 @@ if [ ${REQUESTED_SIZE} > ${EXISTING_SIZE} ]
     pkill -SIGUSR2 cryptofs
     echo 'all done!'
 else
+#Target is Smaller than Existing
     echo 'stop crpytofs'
     pkill -SIGUSR1 cryptofs
     echo 'unmount so we can fsck the partition before we resize'
@@ -34,11 +37,11 @@ else
     echo 'check vfat fs before we attempt resize and fix'
     /usr/sbin/fsck.vfat /dev/mapper/store-media
     echo 'resize vfat fs to new target size'
-    resizefat -p  /dev/mapper/store-media ${REQUESTED_FS_SIZE}G
+    resizefat -p  /dev/mapper/store-media ${TARGET_FS_SIZE}G
     echo 'check vfat fs after resize'
     /usr/sbin/fsck.vfat /dev/mapper/store-media
      echo 'reduce the size of the LV'
-    lvreduce -L ${REQUESTED_SIZE}M /dev/mapper/store-media
+    lvreduce -L ${TARGET_SIZE}M /dev/mapper/store-media
     echo 'check vfat fs after lvreduce'
     /usr/sbin/fsck.vfat /dev/mapper/store-media
     echo 'remount /media/internal'
