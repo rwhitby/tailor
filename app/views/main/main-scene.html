@@ -15,8 +15,8 @@
   </div>
   
   <div class="palm-group">
-    <div class="palm-group-title" id="volumeListTitle">Current Partition Sizes</div>
-    <div class="palm-list" id="list">
+    <div class="palm-group-title">Current Partition Sizes</div>
+    <div class="palm-list">
       <div id="volumeList" x-mojo-element="List"></div>
     </div>
   </div>
@@ -26,13 +26,13 @@
     <div x-mojo-element="Label" id="status"></div>
   </div>
 	
-  <div class="palm-group" id="newSize">
-    <div class="palm-group-title" id="newSizeTitle">Partition Resizing</div>
+  <div class="palm-group">
+    <div class="palm-group-title">Filesystem Info</div>
     <div class="palm-list">
 				
       <div class="palm-row first">
 	<div class="palm-row-wrapper">
-	  <div id="newNameList" x-mojo-element="ListSelector"></div>
+	  <div id="partitionList" x-mojo-element="ListSelector"></div>
 	</div>
       </div>
       
@@ -43,6 +43,18 @@
 	</div>
       </div>
 
+      <div class="palm-row">
+	<div class="palm-row-wrapper">
+	  <div id="unmountPartitionButton" x-mojo-element="Button"></div>
+	</div>
+      </div>
+      
+      <div class="palm-row">
+	<div class="palm-row-wrapper">
+	  <div id="checkFilesystemButton" x-mojo-element="Button"></div>
+	</div>
+      </div>
+      
       <div class="palm-row">
 	<div class="palm-row-wrapper">
 	  <div class="label left un-capitalize">Filesystem Size:</div>
@@ -64,39 +76,6 @@
 	</div>
       </div>
 
-      <div class="palm-row">
-	<div class="palm-row-wrapper textfield-group" x-mojo-focus-highlight="true">
-	  <div class="title">
-	    <div class="label un-capitalize" id="newValueLabel">MiB</div>
-	    <div id="newValueField" x-mojo-element="TextField"></div>
-	  </div>
-	</div>
-      </div>
-      
-      <div class="palm-row">
-	<div class="palm-row-wrapper">
-	  <div id="unmountPartitionButton" x-mojo-element="Button"></div>
-	</div>
-      </div>
-      
-      <div class="palm-row">
-	<div class="palm-row-wrapper">
-	  <div id="checkFilesystemButton" x-mojo-element="Button"></div>
-	</div>
-      </div>
-      
-      <div class="palm-row">
-	<div class="palm-row-wrapper">
-	  <div id="resizeFilesystemButton" x-mojo-element="Button"></div>
-	</div>
-      </div>
-      
-      <div class="palm-row">
-	<div class="palm-row-wrapper">
-	  <div id="resizePartitionButton" x-mojo-element="Button"></div>
-	</div>
-      </div>
-      
       <div class="palm-row last">
 	<div class="palm-row-wrapper">
 	  <div id="mountPartitionButton" x-mojo-element="Button"></div>
@@ -105,10 +84,66 @@
       
     </div>
   </div>
+
+  <div class="palm-group">
+    <div class="palm-group-title">New Filesystem Size</div>
+    <div class="palm-list">
+				
+      <div class="palm-row first">
+	<div class="palm-row-wrapper">
+	  <div x-mojo-element="Label" id="filesystemStatus">Enter new filesystem size ...</div>
+	</div>
+      </div>
+
+      <div class="palm-row">
+	<div class="palm-row-wrapper textfield-group" x-mojo-focus-highlight="true">
+	  <div class="title">
+	    <div class="label un-capitalize">MiB</div>
+	    <div id="newFilesystemSize" x-mojo-element="TextField"></div>
+	  </div>
+	</div>
+      </div>
+      
+      <div class="palm-row last">
+	<div class="palm-row-wrapper">
+	  <div id="resizeFilesystemButton" x-mojo-element="Button"></div>
+	</div>
+      </div>
+      
+    </div>
+  </div>
   
   <div class="palm-group">
-    <div class="palm-group-title" id="mountListTitle">Current Mounts</div>
-    <div class="palm-list" id="list">
+    <div class="palm-group-title">New Partition Size</div>
+    <div class="palm-list">
+				
+      <div class="palm-row first">
+	<div class="palm-row-wrapper">
+	  <div x-mojo-element="Label" id="partitionStatus">Enter new partition size ...</div>
+	</div>
+      </div>
+
+      <div class="palm-row">
+	<div class="palm-row-wrapper textfield-group" x-mojo-focus-highlight="true">
+	  <div class="title">
+	    <div class="label un-capitalize">MiB</div>
+	    <div id="newPartitionSize" x-mojo-element="TextField"></div>
+	  </div>
+	</div>
+      </div>
+      
+      <div class="palm-row last">
+	<div class="palm-row-wrapper">
+	  <div id="resizePartitionButton" x-mojo-element="Button"></div>
+	</div>
+      </div>
+      
+    </div>
+  </div>
+  
+  <div class="palm-group">
+    <div class="palm-group-title">Current Mounts</div>
+    <div class="palm-list">
       <div id="mountList" x-mojo-element="List"></div>
     </div>
   </div>
