@@ -168,21 +168,28 @@ MainAssistant.prototype.setup = function()
 	this.filesystemUsedField =	this.controller.get('filesystemUsed');
 	this.filesystemFreeField =	this.controller.get('filesystemFree');
 
+	this.unmountPartitionGroup = this.controller.get('unmount-partition-group');
 	this.unmountPartitionButton = this.controller.get('unmountPartitionButton');
 
+	this.checkFilesystemGroup =   this.controller.get('check-filesystem-group');
 	this.checkFilesystemButton =   this.controller.get('checkFilesystemButton');
 
+	this.resizeFilesystemGroup =  this.controller.get('resize-filesystem-group');
 	this.newFilesystemSizeField =	this.controller.get('newFilesystemSize');
 	this.resizeFilesystemButton =  this.controller.get('resizeFilesystemButton');
 
+	this.resizePartitionGroup =   this.controller.get('resize-partition-group');
 	this.newPartitionSizeField =	this.controller.get('newPartitionSize');
 	this.resizePartitionButton =   this.controller.get('resizePartitionButton');
 
+	this.mountPartitionGroup =   this.controller.get('mount-partition-group');
 	this.mountPartitionButton =   this.controller.get('mountPartitionButton');
 
+	this.createPartitionGroup =   this.controller.get('create-partition-group');
 	this.initialPartitionSizeField =	this.controller.get('initialPartitionSize');
 	this.createPartitionButton =   this.controller.get('createPartitionButton');
 
+	this.createFilesystemGroup =  this.controller.get('create-filesystem-group');
 	this.initialFilesystemSizeField =	this.controller.get('initialFilesystemSize');
 	this.createFilesystemButton =  this.controller.get('createFilesystemButton');
 
@@ -673,34 +680,14 @@ MainAssistant.prototype.selectTargetPartition = function(name)
 	// Check if the partition is mounted or not
 	if (this.partitionMounts[this.targetPartition] && this.partitionMounts[this.targetPartition].length) {
 		this.targetActivity = "Unmount Partition";
-		this.filesystemSizeField.innerHTML =
-			this.filesystemUsedField.innerHTML =
-			this.filesystemFreeField.innerHTML = "Unmount Partition ...";
-		this.unmountPartitionButtonModel.disabled = false;
-		this.controller.modelChanged(this.unmountPartitionButtonModel);
-		this.mountPartitionButtonModel.disabled = true;
-		this.controller.modelChanged(this.mountPartitionButtonModel);
 	}
 	else {
-		this.unmountPartitionButtonModel.disabled = true;
-		this.controller.modelChanged(this.unmountPartitionButtonModel);
-
 		// Check if the partition has a non-zero size
 		if (this.partitionSize[this.targetPartition] > 0) {
 			this.targetActivity = "Check Filesystem";
-			this.filesystemSizeField.innerHTML =
-				this.filesystemUsedField.innerHTML =
-				this.filesystemFreeField.innerHTML = "Check Filesystem ...";
-			this.mountPartitionButtonModel.disabled = false;
-			this.controller.modelChanged(this.mountPartitionButtonModel);
 		}
 		else {
-			this.targetActivity = "Create Filesystem";
-			this.filesystemSizeField.innerHTML =
-			this.filesystemUsedField.innerHTML =
-			this.filesystemFreeField.innerHTML = "Create Filesystem ...";
-			this.mountPartitionButtonModel.disabled = true;
-			this.controller.modelChanged(this.mountPartitionButtonModel);
+			this.targetActivity = "Create Partition";
 		}
 	}
 
@@ -727,39 +714,58 @@ MainAssistant.prototype.targetActivityChanged = function(event)
 		this.status.innerHTML = "Ready to "+this.targetActivity+" on "+this.partitionNames[this.targetPartition]+" ...";
 	}
 
+	this.unmountPartitionGroup.style.display = 'none';
 	this.unmountPartitionButtonModel.disabled = true;
 	this.controller.modelChanged(this.unmountPartitionButtonModel);
+
+	this.checkFilesystemGroup.style.display = 'none';
 	this.checkFilesystemButtonModel.disabled = true;
 	this.controller.modelChanged(this.checkFilesystemButtonModel);
+
+	this.resizeFilesystemGroup.style.display = 'none';
 	this.newFilesystemSizeModel.disabled = true;
 	this.controller.modelChanged(this.newFilesystemSizeModel);
 	this.resizeFilesystemButtonModel.disabled = true;
 	this.controller.modelChanged(this.resizeFilesystemButtonModel);
+
+	this.resizePartitionGroup.style.display = 'none';
 	this.newPartitionSizeModel.disabled = true;
 	this.controller.modelChanged(this.newPartitionSizeModel);
 	this.resizePartitionButtonModel.disabled = true;
 	this.controller.modelChanged(this.resizePartitionButtonModel);
+
+	this.mountPartitionGroup.style.display = 'none';
 	this.mountPartitionButtonModel.disabled = true;
 	this.controller.modelChanged(this.mountPartitionButtonModel);
+
+	this.createPartitionGroup.style.display = 'none';
 	this.initialPartitionSizeModel.disabled = true;
 	this.controller.modelChanged(this.initialPartitionSizeModel);
 	this.createPartitionButtonModel.disabled = true;
 	this.controller.modelChanged(this.createPartitionButtonModel);
+
+	this.createFilesystemGroup.style.display = 'none';
 	this.initialFilesystemSizeModel.disabled = true;
 	this.controller.modelChanged(this.initialFilesystemSizeModel);
 	this.createFilesystemButtonModel.disabled = true;
 	this.controller.modelChanged(this.createFilesystemButtonModel);
 
 	if (this.targetActivity == "Unmount Partition") {
+		this.unmountPartitionGroup.style.display = '';
+		this.controller.getSceneScroller().mojo.revealElement(this.unmountPartitionButton);
 		this.unmountPartitionButtonModel.disabled = false;
 		this.controller.modelChanged(this.unmountPartitionButtonModel);
 	}
 	else if (this.targetActivity == "Check Filesystem") {
+		this.checkFilesystemGroup.style.display = '';
+		this.controller.getSceneScroller().mojo.revealElement(this.checkFilesystemGroup);
 		this.checkFilesystemButtonModel.disabled = false;
 		this.controller.modelChanged(this.checkFilesystemButtonModel);
 	}
 	else if (this.targetActivity == "Resize Filesystem") {
 		if (this.filesystemFree[this.targetPartition]) {
+			this.resizeFilesystemGroup.style.display = '';
+			this.controller.getSceneScroller().mojo.revealElement(this.resizeFilesystemGroup);
 			this.newFilesystemSizeModel.disabled = false;
 			this.newFilesystemSizeModel.value = this.filesystemSize[this.targetPartition];
 			this.controller.modelChanged(this.newFilesystemSizeModel);
@@ -771,6 +777,8 @@ MainAssistant.prototype.targetActivityChanged = function(event)
 	}
 	else if (this.targetActivity == "Resize Partition") {
 		if (this.filesystemFree[this.targetPartition]) {
+			this.resizePartitionGroup.style.display = '';
+			this.controller.getSceneScroller().mojo.revealElement(this.resizePartitionGroup);
 			this.newPartitionSizeModel.disabled = false;
 			this.newPartitionSizeModel.value = this.partitionSize[this.targetPartition];
 			this.controller.modelChanged(this.newPartitionSizeModel);
@@ -781,14 +789,25 @@ MainAssistant.prototype.targetActivityChanged = function(event)
 		}
 	}
 	else if (this.targetActivity == "Mount Partition") {
+		this.mountPartitionGroup.style.display = '';
+		this.controller.getSceneScroller().mojo.revealElement(this.mountPartitionGroup);
 		this.mountPartitionButtonModel.disabled = false;
 		this.controller.modelChanged(this.mountPartitionButtonModel);
 	}
 	else if (this.targetActivity == "Create Partition") {
+		this.createPartitionGroup.style.display = '';
+		this.controller.getSceneScroller().mojo.revealElement(this.createPartitionGroup);
+		this.initialPartitionSizeModel.disabled = false;
+		this.initialPartitionSizeModel.value = this.freeSpace;
+		this.controller.modelChanged(this.initialPartitionSizeModel);
+		this.initialPartitionSizeChanged({value: this.initialPartitionSizeModel.value});
+		// this.initialPartitionSizeField.mojo.focus();
 		this.createPartitionButtonModel.disabled = false;
 		this.controller.modelChanged(this.createPartitionButtonModel);
 	}
 	else if (this.targetActivity == "Create Filesystem") {
+		this.createFilesystemGroup.style.display = '';
+		this.controller.getSceneScroller().mojo.revealElement(this.createFilesystemGroup);
 		this.createFilesystemButtonModel.disabled = false;
 		this.controller.modelChanged(this.createFilesystemButtonModel);
 	}
@@ -1171,6 +1190,9 @@ MainAssistant.prototype.createPartitionTap = function(event)
 	// %%% Do stuff %%%
 
 	this.createPartitionButton.mojo.deactivate();
+
+	this.targetActivity = "Create Filesystem";
+	this.selectTargetActivity(this.targetActivity);
 };
 
 MainAssistant.prototype.initialFilesystemSizeChanged = function(event)
@@ -1227,12 +1249,8 @@ MainAssistant.prototype.createFilesystemTap = function(event)
 
 	this.createFilesystemButton.mojo.deactivate();
 
-	if (this.filesystemFree[this.targetPartition]) {
-		this.initialPartitionSizeModel.value = this.partitionSize[this.targetPartition];
-		this.controller.modelChanged(this.initialPartitionSizeModel);
-		this.initialPartitionSizeChanged({value: this.initialPartitionSizeModel.value});
-		this.initialPartitionSizeField.mojo.focus();
-	}
+	this.targetActivity = "Check Filesystem";
+	this.selectTargetActivity(this.targetActivity);
 };
 
 MainAssistant.prototype.mediaMountTap = function(event)
