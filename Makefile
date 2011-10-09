@@ -7,6 +7,7 @@ package: clean
 
 test: package
 	- palm-install -r ${APPID}
+	novacom run file://usr/bin/luna-send -- -n 1 palm://com.palm.systemmanager/clearCache '{}' 
 	palm-install ${APPID}_*.ipk
 	palm-launch ${APPID}
 

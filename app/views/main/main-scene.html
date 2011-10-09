@@ -22,12 +22,7 @@
   </div>
 	
   <div class="palm-group">
-    <div class="palm-group-title" id="statusTitle">Partition Status</div>
-    <div x-mojo-element="Label" id="status"></div>
-  </div>
-	
-  <div class="palm-group">
-    <div class="palm-group-title">Filesystem Info</div>
+    <div class="palm-group-title">Select Partition And Activity ...</div>
     <div class="palm-list">
 				
       <div class="palm-row first">
@@ -38,23 +33,17 @@
       
       <div class="palm-row">
 	<div class="palm-row-wrapper">
+	  <div id="partitionActivity" x-mojo-element="ListSelector"></div>
+	</div>
+      </div>
+      
+      <div class="palm-row">
+	<div class="palm-row-wrapper">
 	  <div class="label left un-capitalize">Parition Size:</div>
 	  <div class="title right" id="partitionSize">Unknown</div>
 	</div>
       </div>
 
-      <div class="palm-row">
-	<div class="palm-row-wrapper">
-	  <div id="unmountPartitionButton" x-mojo-element="Button"></div>
-	</div>
-      </div>
-      
-      <div class="palm-row">
-	<div class="palm-row-wrapper">
-	  <div id="checkFilesystemButton" x-mojo-element="Button"></div>
-	</div>
-      </div>
-      
       <div class="palm-row">
 	<div class="palm-row-wrapper">
 	  <div class="label left un-capitalize">Filesystem Size:</div>
@@ -69,13 +58,51 @@
 	</div>
       </div>
 
-      <div class="palm-row">
+      <div class="palm-row last">
 	<div class="palm-row-wrapper">
 	  <div class="label left un-capitalize">Filesystem Free:</div>
 	  <div class="title right" id="filesystemFree">Unknown</div>
 	</div>
       </div>
 
+    </div>
+  </div>
+
+  <div class="palm-group">
+    <div class="palm-group-title" id="statusTitle">Partition Status</div>
+    <div x-mojo-element="Label" id="status"></div>
+  </div>
+	
+  <div class="palm-group" id="unmount-partition-group">
+    <div class="palm-group-title">Unmount Partition</div>
+    <div class="palm-list">
+				
+      <div class="palm-row">
+	<div class="palm-row-wrapper">
+	  <div id="unmountPartitionButton" x-mojo-element="Button"></div>
+	</div>
+      </div>
+      
+    </div>
+  </div>
+
+  <div class="palm-group" id="check-filesystem-group">
+    <div class="palm-group-title">Check Filesystem</div>
+    <div class="palm-list">
+				
+      <div class="palm-row">
+	<div class="palm-row-wrapper">
+	  <div id="checkFilesystemButton" x-mojo-element="Button"></div>
+	</div>
+      </div>
+      
+    </div>
+  </div>
+
+  <div class="palm-group">
+    <div class="palm-group-title">Filesystem Info</div>
+    <div class="palm-list">
+				
       <div class="palm-row last">
 	<div class="palm-row-wrapper">
 	  <div id="mountPartitionButton" x-mojo-element="Button"></div>
