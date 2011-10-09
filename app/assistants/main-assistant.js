@@ -338,7 +338,7 @@ MainAssistant.prototype.refresh = function()
 	}
 	this.volumesModel.items = [];
 	this.statusTitle.innerHTML = "Partition Status";
-	this.status.innerHTML = "Reading partition sizes ...";
+	this.status.innerHTML = "Idle";
 	this.partitionSizeField.innerHTML =	"Unknown";
 	this.filesystemSizeField.innerHTML = "Unknown";
 	this.filesystemUsedField.innerHTML = "Unknown";
@@ -368,6 +368,7 @@ MainAssistant.prototype.refresh = function()
 	this.controller.modelChanged(this.ext3fsMountButtonModel);
 	this.optwareMountButtonModel.disabled = true;
 	this.controller.modelChanged(this.optwareMountButtonModel);
+	this.status.innerHTML = "Reading volume groups ...";
 	this.request = TailorService.listGroups(this.listGroupsHandler);
 };
 
@@ -378,6 +379,7 @@ MainAssistant.prototype.listGroups = function(payload)
 	}
 
 	if (payload.returnValue === false) {
+		this.status.innerHTML = "Error reading volume groups ...";
 		this.errorMessage('<b>Service Error (listGroups):</b><br>'+payload.errorText, payload.stdErr);
 		this.overlay.hide();
 		return;
@@ -395,6 +397,7 @@ MainAssistant.prototype.listGroups = function(payload)
 		}
 	}
 
+	this.status.innerHTML = "Reading logical volumes ...";
 	this.request = TailorService.listVolumes(this.listVolumesHandler, "store");
 };
 
@@ -409,6 +412,7 @@ MainAssistant.prototype.listVolumes = function(payload)
 	}
 
 	if (payload.returnValue === false) {
+		this.status.innerHTML = "Error reading logical volumes ...";
 		this.errorMessage('<b>Service Error (listVolumes):</b><br>'+payload.errorText, payload.stdErr);
 		this.overlay.hide();
 		return;
@@ -464,6 +468,7 @@ MainAssistant.prototype.listVolumes = function(payload)
 	// Do this after the mounts have been determined
 	// this.targetPartitionChanged({value:this.targetPartition});
 
+	this.status.innerHTML = "Reading mounts ...";
 	this.request = TailorService.listMounts(this.listMountsHandler);
 };
 
@@ -481,6 +486,7 @@ MainAssistant.prototype.listMounts = function(payload)
 	}
 
 	if (payload.returnValue === false) {
+		this.status.innerHTML = "Error reading mounts ...";
 		this.errorMessage('<b>Service Error (listMounts):</b><br>'+payload.errorText, payload.stdErr);
 		this.overlay.hide();
 		return;
@@ -559,9 +565,11 @@ MainAssistant.prototype.listMounts = function(payload)
 	this.mountList.mojo.noticeUpdatedItems(0, this.mountsModel.items);
 	this.mountList.mojo.setLength(this.mountsModel.items.length);
 
+	this.status.innerHTML = "Ready";
+
 	if (jailActive) {
-		this.errorMessage("<b>Danger Will Robinson!</b><br>Jails are active. Reboot your device and then immediately relaunch only this program and no other applications before continuing.");
 		this.status.innerHTML = "Reboot required ...";
+		this.errorMessage("<b>Danger Will Robinson!</b><br>Jails are active. Reboot your device and then immediately relaunch only this program and no other applications before continuing.");
 		this.targetPartitionModel.disabled = true;
 		this.controller.modelChanged(this.targetPartitionModel);
 		this.unmountPartitionButtonModel.disabled = true;
@@ -688,6 +696,7 @@ MainAssistant.prototype.unmountPartitionTap = function(event)
 MainAssistant.prototype.unmountPartition = function(payload)
 {
 	if (payload.returnValue === false) {
+		this.status.innerHTML = "Error unmounting "+this.partitionNames[this.targetPartition]+" ...";
 		this.errorMessage('<b>Service Error (unmountPartition):</b><br>'+payload.errorText, payload.stdErr);
 	}
 
@@ -721,8 +730,8 @@ MainAssistant.prototype.checkFilesystem = function(payload)
 
 	if (payload.returnValue === false) {
 		// this.errorMessage('<b>Service Error (checkFilesystem):</b><br>'+payload.errorText, [ payload.stdErr ]);
+		this.status.innerHTML = "Error checking "+this.partitionNames[this.targetPartition]+" ...";
 		this.errorMessage('<b>Filesystem Check Failed</b>');
-		this.status.innerHTML = "Filesystem Check Failed";
 		this.checkFilesystemButton.mojo.deactivate();
 		this.resizeFilesystemButtonModel.disabled = true;
 		this.controller.modelChanged(this.resizeFilesystemButtonModel);
@@ -1002,6 +1011,7 @@ MainAssistant.prototype.mountPartition = function(payload)
 	}
 
 	if (payload.returnValue === false) {
+		this.status.innerHTML = "Error mounting "+this.partitionNames[this.targetPartition]+" ...";
 		this.errorMessage('<b>Service Error (mountPartition):</b><br>'+payload.errorText, payload.stdErr);
 	}
 
