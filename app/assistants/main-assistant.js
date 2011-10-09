@@ -30,9 +30,7 @@ function MainAssistant()
 	// setup volumes model
 	this.volumesModel = {items:[]};
 	
-	this.freeSpaceModel = {label: "Unused Space:", title: "None", labelClass: 'left', titleClass: 'right'};
-
-	this.targetPartitionModel = { choices: [], disabled: true };
+	this.freeSpaceModel = {label: "Unused Space:", name: "unused", title: "None", labelClass: 'left', titleClass: 'right'};
 
 	this.targetActivityModel = { choices: [], disabled: true };
 
@@ -90,6 +88,7 @@ function MainAssistant()
 	this.targetActivity = false;
 
 	this.partitionNames = {
+		"unused":"Unused Space",
 		"media":"USB (media)",
 		"ext3fs":"User (ext3)",
 		"cm-system":"Android (system)",
@@ -146,7 +145,8 @@ MainAssistant.prototype.setup = function()
 	this.statusTitle = 		this.controller.get('statusTitle');
 	this.status = 			this.controller.get('status');
 	
-	this.partitionList =	this.controller.get('partitionList');
+	this.activityTitle =	this.controller.get('activityTitle');
+
 	this.partitionSizeField =	this.controller.get('partitionSize');
 	this.partitionActivity = this.controller.get('partitionActivity');
 
@@ -181,7 +181,6 @@ MainAssistant.prototype.setup = function()
 	this.listGroupsHandler = this.listGroups.bindAsEventListener(this);
 	this.listVolumesHandler = this.listVolumes.bindAsEventListener(this);
 	this.volumeTappedHandler = this.volumeTapped.bindAsEventListener(this);
-	this.targetPartitionChangedHandler =  this.targetPartitionChanged.bindAsEventListener(this);
 	this.targetActivityChangedHandler =  this.targetActivityChanged.bindAsEventListener(this);
 	this.unmountPartitionTapHandler = this.unmountPartitionTap.bindAsEventListener(this);
 	this.unmountPartitionHandler = this.unmountPartition.bindAsEventListener(this);
@@ -208,9 +207,6 @@ MainAssistant.prototype.setup = function()
     this.controller.setupWidget('volumeList', {
 			itemTemplate: "main/rowTemplate", swipeToDelete: false, reorderable: false }, this.volumesModel);
 	this.controller.listen(this.volumeList, Mojo.Event.listTap, this.volumeTappedHandler);
-
-	this.controller.setupWidget('partitionList', { label: "Partition" }, this.targetPartitionModel);
-	this.controller.listen(this.partitionList, Mojo.Event.propertyChange, this.targetPartitionChangedHandler);
 
 	this.controller.setupWidget('partitionActivity', { label: "Activity" }, this.targetActivityModel);
 	this.controller.listen(this.partitionActivity, Mojo.Event.propertyChange, this.targetActivityChangedHandler);
@@ -351,8 +347,6 @@ MainAssistant.prototype.refresh = function()
 	this.filesystemSizeField.innerHTML = "Unknown";
 	this.filesystemUsedField.innerHTML = "Unknown";
 	this.filesystemFreeField.innerHTML = "Unknown";
-	this.targetPartitionModel.disabled = true;
-	this.controller.modelChanged(this.targetPartitionModel);
 	this.targetActivityModel.disabled = true;
 	this.controller.modelChanged(this.targetActivityModel);
 	this.unmountPartitionButtonModel.disabled = true;
@@ -438,6 +432,9 @@ MainAssistant.prototype.listVolumes = function(payload)
 				if (this.partitionNames[name]) {
 					this.partitionSize[name] = size;
 					this.volumesModel.items.push({label: this.partitionNames[name]+":", title: this.showValue(size, "MiB"), name: name, labelClass: 'left', titleClass: 'right'});
+					if (!this.targetPartition) {
+						this.targetPartition = name;
+					}
 				}
 			}
 		}
@@ -453,20 +450,6 @@ MainAssistant.prototype.listVolumes = function(payload)
 
 	this.volumeList.mojo.noticeUpdatedItems(0, this.volumesModel.items);
 	this.volumeList.mojo.setLength(this.volumesModel.items.length);
-
-	this.targetPartitionModel.choices = [];
-	this.targetPartitionModel.value = false;
-	for (var f in this.partitionSize) {
-		this.targetPartitionModel.choices.push({"label":this.partitionNames[f], "value":f});
-		if (f == this.targetPartition) {
-			this.targetPartitionModel.value = this.partitionNames[f];
-		}
-	}
-	if (!this.targetPartitionModel.value) {
-		this.targetPartitionModel.value = this.targetPartitionModel.choices[0].label;
-	}
-	this.targetPartitionModel.disabled = false;
-	this.controller.modelChanged(this.targetPartitionModel);
 
 	this.targetActivityModel.choices = [];
 	this.targetActivityModel.choices.push({'label':"Idle", 'value':"Idle"});
@@ -487,16 +470,11 @@ MainAssistant.prototype.listVolumes = function(payload)
 	this.checkFilesystemButtonModel.disabled = false;
 	this.controller.modelChanged(this.checkFilesystemButtonModel);
 
-	if (!this.targetPartition) {
-		this.targetPartition = this.targetPartitionModel.choices[0].value;
-	}
-
 	if (!this.targetActivity) {
 		this.targetActivity = this.targetActivityModel.choices[0].value;
 	}
 
 	// Do this after the mounts have been determined
-	// this.targetPartitionChanged({value:this.targetPartition});
 	// this.targetActivityChanged({value:this.targetActivity});
 
 	this.status.innerHTML = "Reading mounts ...";
@@ -601,8 +579,6 @@ MainAssistant.prototype.listMounts = function(payload)
 	if (jailActive) {
 		this.status.innerHTML = "Reboot required ...";
 		this.errorMessage("<b>Danger Will Robinson!</b><br>Jails are active. Reboot your device and then immediately relaunch only this program and no other applications before continuing.");
-		this.targetPartitionModel.disabled = true;
-		this.controller.modelChanged(this.targetPartitionModel);
 		this.targetActivityModel.disabled = true;
 		this.controller.modelChanged(this.targetActivityModel);
 		this.unmountPartitionButtonModel.disabled = true;
@@ -631,7 +607,7 @@ MainAssistant.prototype.listMounts = function(payload)
 	}
 
 	// This will enable or disable the buttons appropriately
-	this.targetPartitionChanged({value:this.targetPartition});
+	this.selectTargetPartition(this.targetPartition);
 
 	this.overlay.hide();
 };
@@ -640,25 +616,31 @@ MainAssistant.prototype.volumeTapped = function(event)
 {
 	if (this.rebootRequired) return;
 	if (event.item.name) {
-		this.targetPartitionModel.value = this.partitionNames[event.item.name];
-		this.controller.modelChanged(this.targetPartitionModel);
-		this.targetPartitionChanged({value:event.item.name});
+		this.selectTargetPartition(event.item.name);
 	}
 };
 
-MainAssistant.prototype.targetPartitionChanged = function(event)
+MainAssistant.prototype.selectTargetPartition = function(name)
 {
-	this.targetPartition = event.value;
+	this.targetPartition = name;
+
+	this.activityTitle.innerHTML = "Select Activity for "+this.partitionNames[this.targetPartition]+" ...";
 
 	this.statusTitle.innerHTML = this.partitionNames[this.targetPartition]+" Partition Status";
 
-	this.partitionSizeField.innerHTML = this.partitionSize[this.targetPartition]+" MiB";
+	if (this.targetPartition == 'unused') {
+		this.partitionSizeField.innerHTML = this.showValue(this.freeSpace, "MiB");
+	}
+	else {
+		this.partitionSizeField.innerHTML = this.partitionSize[this.targetPartition]+" MiB";
+	}
+			
 	this.filesystemSizeField.innerHTML = "Unknown";
 	this.filesystemUsedField.innerHTML = "Unknown";
 	this.filesystemFreeField.innerHTML = "Unknown";
-			
+
 	// Check if the partition is mounted or not
-	if (this.partitionMounts[this.targetPartition].length) {
+	if (this.partitionMounts[this.targetPartition] && this.partitionMounts[this.targetPartition].length) {
 		this.filesystemSizeField.innerHTML =
 			this.filesystemUsedField.innerHTML =
 			this.filesystemFreeField.innerHTML = "Unmount Filesystem ...";
@@ -1221,7 +1203,6 @@ MainAssistant.prototype.handleCommand = function(event)
 MainAssistant.prototype.cleanup = function(event)
 {
 	this.controller.stopListening(this.volumeList, Mojo.Event.listTap, this.volumeTappedHandler);
-	this.controller.stopListening(this.partitionList, Mojo.Event.propertyChange, this.targetPartitionChangedHandler);
 	this.controller.stopListening(this.partitionActivity, Mojo.Event.propertyChange, this.targetActivityChangedHandler);
 	this.controller.stopListening(this.unmountPartitionButton, Mojo.Event.tap, this.unmountPartitionTapHandler);
 	this.controller.stopListening(this.checkFilesystemButton,  Mojo.Event.tap, this.checkFilesystemTapHandler);
