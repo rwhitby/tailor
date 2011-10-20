@@ -20,7 +20,7 @@ then
     echo 'check vfat fs after lvrsize'
     /usr/sbin/fsck.vfat /dev/mapper/store-media
     echo 'resize vfat fs to new target size'
-    resizefat -p  /dev/mapper/store-media ${TARGET_FS_SIZE}M
+    resizefat /dev/mapper/store-media ${TARGET_FS_SIZE}M
     echo 'check vfat fs after resize'
     /usr/sbin/fsck.vfat /dev/mapper/store-media 
     echo 'remount /media/internal'
@@ -37,7 +37,7 @@ else
     echo 'check vfat fs before we attempt resize and fix'
     /usr/sbin/fsck.vfat /dev/mapper/store-media
     echo 'resize vfat fs to new target size'
-    resizefat -p  /dev/mapper/store-media ${TARGET_FS_SIZE}G
+    resizefat /dev/mapper/store-media ${TARGET_FS_SIZE}G
     echo 'check vfat fs after resize'
     /usr/sbin/fsck.vfat /dev/mapper/store-media
      echo 'reduce the size of the LV'
