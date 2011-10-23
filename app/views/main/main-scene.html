@@ -31,28 +31,28 @@
 	</div>
       </div>
       
-      <div class="palm-row">
+      <div class="palm-row" id="partitionSizeRow">
 	<div class="palm-row-wrapper">
-	  <div class="label left un-capitalize">Parition Size:</div>
+	  <div class="label left un-capitalize">Partition Size:</div>
 	  <div class="title right" id="partitionSize">Unknown</div>
 	</div>
       </div>
 
-      <div class="palm-row">
+      <div class="palm-row" id="filesystemSizeRow">
 	<div class="palm-row-wrapper">
 	  <div class="label left un-capitalize">Filesystem Size:</div>
 	  <div class="title right" id="filesystemSize">Unknown</div>
 	</div>
       </div>
 
-      <div class="palm-row">
+      <div class="palm-row" id="filesystemUsedRow">
 	<div class="palm-row-wrapper">
 	  <div class="label left un-capitalize">Filesystem Used:</div>
 	  <div class="title right" id="filesystemUsed">Unknown</div>
 	</div>
       </div>
 
-      <div class="palm-row last">
+      <div class="palm-row last" id="filesystemFreeRow">
 	<div class="palm-row-wrapper">
 	  <div class="label left un-capitalize">Filesystem Free:</div>
 	  <div class="title right" id="filesystemFree">Unknown</div>
@@ -65,159 +65,110 @@
   <div class="palm-group" id="unmount-partition-group">
     <div class="palm-group-title" id="unmount-partition-title">Unmount Partition</div>
     <div class="palm-list">
-				
-      <div class="palm-row">
-	<div class="palm-row-wrapper">
-	  <div id="unmountPartitionButton" x-mojo-element="Button"></div>
-	</div>
+      <div class="palm-row-wrapper">
+	<div id="unmountPartitionButton" x-mojo-element="Button"></div>
       </div>
-      
     </div>
   </div>
 
   <div class="palm-group" id="check-filesystem-group">
     <div class="palm-group-title" id="check-filesystem-title">Check Filesystem</div>
     <div class="palm-list">
-				
-      <div class="palm-row">
-	<div class="palm-row-wrapper">
-	  <div id="checkFilesystemButton" x-mojo-element="Button"></div>
-	</div>
+      <div class="palm-row-wrapper">
+	<div id="checkFilesystemButton" x-mojo-element="Button"></div>
       </div>
-      
     </div>
   </div>
 
   <div class="palm-group" id="resize-filesystem-group">
     <div class="palm-group-title" id="resize-filesystem-title">Resize Filesystem</div>
     <div class="palm-list">
-				
-      <div class="palm-row first">
-	<div class="palm-row-wrapper textfield-group" x-mojo-focus-highlight="true">
-	  <div class="title">
-	    <div class="label un-capitalize">MiB</div>
-	    <div id="newFilesystemSize" x-mojo-element="TextField"></div>
-	  </div>
+      <div class="palm-row-wrapper textfield-group" x-mojo-focus-highlight="true">
+	<div class="title">
+	  <div class="label un-capitalize">MiB</div>
+	  <div id="newFilesystemSize" x-mojo-element="TextField"></div>
 	</div>
       </div>
-      
-      <div class="palm-row last">
-	<div class="palm-row-wrapper">
-	  <div id="resizeFilesystemButton" x-mojo-element="Button"></div>
-	</div>
+      <div class="palm-row-wrapper">
+	<div id="resizeFilesystemButton" x-mojo-element="Button"></div>
       </div>
-      
     </div>
   </div>
   
   <div class="palm-group" id="resize-partition-group">
     <div class="palm-group-title" id="resize-partition-title">Resize Partition</div>
     <div class="palm-list">
-				
-      <div class="palm-row first">
-	<div class="palm-row-wrapper textfield-group" x-mojo-focus-highlight="true">
-	  <div class="title">
-	    <div class="label un-capitalize">MiB</div>
-	    <div id="newPartitionSize" x-mojo-element="TextField"></div>
-	  </div>
+      <div class="palm-row-wrapper textfield-group" x-mojo-focus-highlight="true">
+	<div class="title">
+	  <div class="label un-capitalize">MiB</div>
+	  <div id="newPartitionSize" x-mojo-element="TextField"></div>
 	</div>
       </div>
-      
-      <div class="palm-row last">
-	<div class="palm-row-wrapper">
-	  <div id="resizePartitionButton" x-mojo-element="Button"></div>
-	</div>
+      <div class="palm-row-wrapper">
+	<div id="resizePartitionButton" x-mojo-element="Button"></div>
       </div>
-      
     </div>
   </div>
   
   <div class="palm-group" id="mount-partition-group">
     <div class="palm-group-title" id="mount-partition-title">Mount Partition</div>
     <div class="palm-list">
-				
-      <div class="palm-row">
-	<div class="palm-row-wrapper">
-	  <div id="mountPartitionButton" x-mojo-element="Button"></div>
-	</div>
+      <div class="palm-row-wrapper">
+	<div id="mountPartitionButton" x-mojo-element="Button"></div>
       </div>
-      
     </div>
   </div>
 
   <div class="palm-group" id="create-partition-group">
     <div class="palm-group-title" id="create-partition-title">Create Partition</div>
     <div class="palm-list">
-				
       <div class="palm-row first">
 	<div class="palm-row-wrapper">
 	  <div id="initialPartitionName" x-mojo-element="ListSelector"></div>
 	</div>
       </div>
-      
-      <div class="palm-row">
-	<div class="palm-row-wrapper textfield-group" x-mojo-focus-highlight="true">
-	  <div class="title">
-	    <div class="label un-capitalize">MiB</div>
-	    <div id="initialPartitionSize" x-mojo-element="TextField"></div>
-	  </div>
+      <div class="palm-row-wrapper textfield-group" x-mojo-focus-highlight="true">
+	<div class="title">
+	  <div class="label un-capitalize">MiB</div>
+	  <div id="initialPartitionSize" x-mojo-element="TextField"></div>
 	</div>
       </div>
-      
-      <div class="palm-row last">
-	<div class="palm-row-wrapper">
-	  <div id="createPartitionButton" x-mojo-element="Button"></div>
-	</div>
+      <div class="palm-row-wrapper">
+	<div id="createPartitionButton" x-mojo-element="Button"></div>
       </div>
-      
     </div>
   </div>
   
   <div class="palm-group" id="create-filesystem-group">
     <div class="palm-group-title" id="create-filesystem-title">Create Filesystem</div>
     <div class="palm-list">
-				
-      <div class="palm-row first">
-	<div class="palm-row-wrapper textfield-group" x-mojo-focus-highlight="true">
-	  <div class="title">
-	    <div class="label un-capitalize">MiB</div>
-	    <div id="initialFilesystemSize" x-mojo-element="TextField"></div>
-	  </div>
+      <div class="palm-row-wrapper textfield-group" x-mojo-focus-highlight="true">
+	<div class="title">
+	  <div class="label un-capitalize">MiB</div>
+	  <div id="initialFilesystemSize" x-mojo-element="TextField"></div>
 	</div>
       </div>
-      
-      <div class="palm-row last">
-	<div class="palm-row-wrapper">
-	  <div id="createFilesystemButton" x-mojo-element="Button"></div>
-	</div>
+      <div class="palm-row-wrapper">
+	<div id="createFilesystemButton" x-mojo-element="Button"></div>
       </div>
-      
     </div>
   </div>
   
   <div class="palm-group" id="delete-filesystem-group">
     <div class="palm-group-title" id="delete-filesystem-title">Delete Filesystem</div>
     <div class="palm-list">
-				
-      <div class="palm-row">
-	<div class="palm-row-wrapper">
-	  <div id="deleteFilesystemButton" x-mojo-element="Button"></div>
-	</div>
+      <div class="palm-row-wrapper">
+	<div id="deleteFilesystemButton" x-mojo-element="Button"></div>
       </div>
-      
     </div>
   </div>
 
   <div class="palm-group" id="delete-partition-group">
     <div class="palm-group-title" id="delete-partition-title">Delete Partition</div>
     <div class="palm-list">
-				
-      <div class="palm-row">
-	<div class="palm-row-wrapper">
-	  <div id="deletePartitionButton" x-mojo-element="Button"></div>
-	</div>
+      <div class="palm-row-wrapper">
+	<div id="deletePartitionButton" x-mojo-element="Button"></div>
       </div>
-      
     </div>
   </div>
 

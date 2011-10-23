@@ -36,11 +36,13 @@ function MainAssistant()
 
 	this.unmountPartitionButtonModel = {
 		label: $L("Unmount Partition"),
+		buttonClass: 'affirmative',
 		disabled: true
 	};
 
 	this.checkFilesystemButtonModel = {
 		label: $L("Check Filesystem"),
+		buttonClass: 'affirmative',
 		disabled: true
 	};
 
@@ -48,6 +50,7 @@ function MainAssistant()
 
 	this.resizeFilesystemButtonModel = {
 		label: $L("Resize Filesystem"),
+		buttonClass: 'dismissal',
 		disabled: true
 	};
 
@@ -55,11 +58,13 @@ function MainAssistant()
 
 	this.resizePartitionButtonModel = {
 		label: $L("Resize Partition"),
+		buttonClass: 'dismissal',
 		disabled: true
 	};
 
 	this.mountPartitionButtonModel = {
 		label: $L("Mount Partition"),
+		buttonClass: 'affirmative',
 		disabled: true
 	};
 
@@ -69,6 +74,7 @@ function MainAssistant()
 
 	this.createPartitionButtonModel = {
 		label: $L("Create Partition"),
+		buttonClass: 'affirmative',
 		disabled: true
 	};
 
@@ -76,16 +82,19 @@ function MainAssistant()
 
 	this.createFilesystemButtonModel = {
 		label: $L("Create Filesystem"),
+		buttonClass: 'affirmative',
 		disabled: true
 	};
 
 	this.deleteFilesystemButtonModel = {
 		label: $L("Delete Filesystem"),
+		buttonClass: 'negative',
 		disabled: true
 	};
 
 	this.deletePartitionButtonModel = {
 		label: $L("Delete Partition"),
+		buttonClass: 'negative',
 		disabled: true
 	};
 
@@ -179,9 +188,13 @@ MainAssistant.prototype.setup = function()
 
 	this.partitionActivity = this.controller.get('partitionActivity');
 
+	this.partitionSizeRow =		this.controller.get('partitionSizeRow');
 	this.partitionSizeField =	this.controller.get('partitionSize');
+	this.filesystemSizeRow =	this.controller.get('filesystemSizeRow');
 	this.filesystemSizeField =	this.controller.get('filesystemSize');
+	this.filesystemUsedRow =	this.controller.get('filesystemUsedRow');
 	this.filesystemUsedField =	this.controller.get('filesystemUsed');
+	this.filesystemFreeRow =	this.controller.get('filesystemFreeRow');
 	this.filesystemFreeField =	this.controller.get('filesystemFree');
 
 	this.unmountPartitionGroup = this.controller.get('unmount-partition-group');
@@ -288,10 +301,10 @@ MainAssistant.prototype.setup = function()
 			autoFocus: false,
 				autoReplace: false,
 				// hintText: 'Enter new filesystem size ...',
-				multiline: false,
+				// multiline: false,
 				enterSubmits: false,
 				changeOnKeyPress: true,
-				maxLength: 6,
+				// maxLength: 6,
 				preventResize: true,
 				textCase: Mojo.Widget.steModeLowerCase,
 				focusMode: Mojo.Widget.focusSelectMode,
@@ -307,10 +320,10 @@ MainAssistant.prototype.setup = function()
 			autoFocus: false,
 				autoReplace: false,
 				// hintText: 'Enter new partition size ...',
-				multiline: false,
+				// multiline: false,
 				enterSubmits: false,
 				changeOnKeyPress: true,
-				maxLength: 6,
+				// maxLength: 6,
 				preventResize: true,
 				textCase: Mojo.Widget.steModeLowerCase,
 				focusMode: Mojo.Widget.focusSelectMode,
@@ -322,16 +335,16 @@ MainAssistant.prototype.setup = function()
 	this.controller.setupWidget('resizePartitionButton', { type: Mojo.Widget.activityButton }, this.resizePartitionButtonModel);
 	this.controller.listen(this.resizePartitionButton, Mojo.Event.tap, this.resizePartitionTapHandler);
 
-	this.controller.setupWidget('initialPartitionName', { label: "Partition Name" }, this.initialPartitionNameModel);
+	this.controller.setupWidget('initialPartitionName', { label: "Partition" }, this.initialPartitionNameModel);
 
 	this.controller.setupWidget('initialPartitionSize', {
 			autoFocus: false,
 				autoReplace: false,
 				// hintText: 'Enter initial partition size ...',
-				multiline: false,
+				// multiline: false,
 				enterSubmits: false,
 				changeOnKeyPress: true,
-				maxLength: 6,
+				// maxLength: 6,
 				preventResize: true,
 				textCase: Mojo.Widget.steModeLowerCase,
 				focusMode: Mojo.Widget.focusSelectMode,
@@ -347,10 +360,10 @@ MainAssistant.prototype.setup = function()
 			autoFocus: false,
 				autoReplace: false,
 				// hintText: 'Enter initial filesystem size ...',
-				multiline: false,
+				// multiline: false,
 				enterSubmits: false,
 				changeOnKeyPress: true,
-				maxLength: 6,
+				// maxLength: 6,
 				preventResize: true,
 				textCase: Mojo.Widget.steModeLowerCase,
 				focusMode: Mojo.Widget.focusSelectMode,
@@ -628,23 +641,33 @@ MainAssistant.prototype.updateActivityList = function()
 	this.targetActivityModel.choices = [];
 
 	if (this.targetPartition == "unused") {
-		this.targetActivityModel.choices.push({'label':"Create Partition", 'value':"Create Partition"});
+		if (this.freeSpace > 0) {
+			this.targetActivityModel.choices.push({'label':"Create Partition", 'value':"Create Partition"});
+		}
 	}
 	else {
 		if (this.partitionMounts[this.targetPartition] && this.partitionMounts[this.targetPartition].length) {
 			this.targetActivityModel.choices.push({'label':"Unmount Partition", 'value':"Unmount Partition"});
 		}
 		else {
-			this.targetActivityModel.choices.push({'label':"Mount Partition", 'value':"Mount Partition"});
+			if (!this.filesystemCheck[this.targetPartition]) {
+				this.targetActivityModel.choices.push({'label':"Check Filesystem", 'value':"Check Filesystem"});
+			}
+			else {
+				if (this.filesystemSize[this.targetPartition] != 0) {
+					this.targetActivityModel.choices.push({'label':"Mount Partition", 'value':"Mount Partition"});
+					this.targetActivityModel.choices.push({'label':"Resize Filesystem", 'value':"Resize Filesystem"});
+				}
+				this.targetActivityModel.choices.push({'label':"Resize Partition", 'value':"Resize Partition"});
+				if (this.filesystemSize[this.targetPartition] == 0) {
+					this.targetActivityModel.choices.push({'label':"Create Filesystem", 'value':"Create Filesystem"});
+					this.targetActivityModel.choices.push({'label':"Delete Partition", 'value':"Delete Partition"});
+				}
+				else {
+					this.targetActivityModel.choices.push({'label':"Delete Filesystem", 'value':"Delete Filesystem"});
+				}
+			}
 		}
-		this.targetActivityModel.choices.push({'label':"Check Filesystem", 'value':"Check Filesystem"});
-		if (this.filesystemCheck[this.targetPartition]) {
-			this.targetActivityModel.choices.push({'label':"Resize Filesystem", 'value':"Resize Filesystem"});
-			this.targetActivityModel.choices.push({'label':"Resize Partition", 'value':"Resize Partition"});
-		}
-		this.targetActivityModel.choices.push({'label':"Create Filesystem", 'value':"Create Filesystem"});
-		this.targetActivityModel.choices.push({'label':"Delete Filesystem", 'value':"Delete Filesystem"});
-		this.targetActivityModel.choices.push({'label':"Delete Partition", 'value':"Delete Partition"});
 	}
 
 	if (this.rebootRequired) {
@@ -656,7 +679,7 @@ MainAssistant.prototype.updateActivityList = function()
 		this.targetActivity = this.targetActivityModel.value = this.targetActivityModel.choices[0].label;
 	}
 
-	this.targetActivityModel.disabled = this.rebootRequired;
+	this.targetActivityModel.disabled = this.rebootRequired || (this.targetActivityModel.choices.length == 0);
 	this.controller.modelChanged(this.targetActivityModel);
 };
 
@@ -788,23 +811,24 @@ MainAssistant.prototype.selectTargetPartition = function(name)
 
 	this.activityTitle.innerHTML = "Select Activity for "+this.partitionNames[this.targetPartition]+" ...";
 
+	this.partitionSizeRow.className = 'palm-row last';
+	this.filesystemSizeRow.style.display = 'none';
+	this.filesystemUsedRow.style.display = 'none';
+	this.filesystemFreeRow.style.display = 'none';
+
 	if (this.targetPartition == 'unused') {
-		this.partitionSizeField.innerHTML = this.showValue(this.freeSpace, "MiB");
-		this.filesystemSizeField.innerHTML = "N/A";
-		this.filesystemUsedField.innerHTML = "N/A";
-		this.filesystemFreeField.innerHTML = "N/A";
+		this.partitionSizeField.innerHTML = this.freeSpace + " MiB";
 	}
 	else {
 		this.partitionSizeField.innerHTML = this.partitionSize[this.targetPartition]+" MiB";
-		if (this.filesystemCheck[this.targetPartition]) {
-			this.filesystemSizeField.innerHTML = this.showValue(this.filesystemSize[this.targetPartition], "MiB");
-			this.filesystemUsedField.innerHTML = this.showValue(this.filesystemUsed[this.targetPartition], "MiB");
-			this.filesystemFreeField.innerHTML = this.showValue(this.filesystemFree[this.targetPartition], "MiB");
-		}
-		else {
-			this.filesystemSizeField.innerHTML = "Unknown";	
-			this.filesystemUsedField.innerHTML = "Unknown";
-			this.filesystemFreeField.innerHTML = "Unknown";
+		if (this.filesystemCheck[this.targetPartition] && (this.filesystemSize[this.targetPartition] > 0)) {
+			this.partitionSizeRow.className = 'palm-row';
+			this.filesystemSizeRow.style.display = '';
+			this.filesystemSizeField.innerHTML = this.filesystemSize[this.targetPartition] + " MiB";
+			this.filesystemUsedRow.style.display = '';
+			this.filesystemUsedField.innerHTML = this.filesystemUsed[this.targetPartition] + " MiB";
+			this.filesystemFreeRow.style.display = '';
+			this.filesystemFreeField.innerHTML = this.filesystemFree[this.targetPartition] + " MiB";
 		}
 	}
 			
@@ -818,10 +842,18 @@ MainAssistant.prototype.selectTargetPartition = function(name)
 	else {
 		// Check if the partition has a non-zero size
 		if (this.partitionSize[this.targetPartition] > 0) {
-			this.targetActivity = "Check Filesystem";
+			if (this.filesystemCheck[this.targetPartition]) {
+				this.targetActivity = "Mount Partition";
+			}
+			else {
+				this.targetActivity = "Check Filesystem";
+			}
+		}
+		else if (this.freeSpace > 0) {
+			this.targetActivity = "Create Partition";
 		}
 		else {
-			this.targetActivity = "Create Partition";
+			this.targetActivity = "None Available";
 		}
 	}
 
@@ -832,7 +864,6 @@ MainAssistant.prototype.selectTargetActivity = function(name)
 {
 	this.targetActivity = name;
 	this.targetActivityModel.value = this.targetActivity;
-	this.targetActivityModel.disabled = this.rebootRequired;
 	this.controller.modelChanged(this.targetActivityModel);
 	this.targetActivityChanged({value:this.targetActivity});
 };
@@ -1074,9 +1105,9 @@ MainAssistant.prototype.checkFilesystem = function(payload)
 				}
 				var freeSpace = Math.floor(((matches[2]-matches[1])*this.clusterSize)/1048756);
 				var usedSpace = totalSpace - freeSpace;
-				this.filesystemSizeField.innerHTML = totalSpace+" MiB";
-				this.filesystemUsedField.innerHTML = usedSpace+" MiB";
-				this.filesystemFreeField.innerHTML = freeSpace+" MiB";
+				// this.filesystemSizeField.innerHTML = totalSpace+" MiB";
+				// this.filesystemUsedField.innerHTML = usedSpace+" MiB";
+				// this.filesystemFreeField.innerHTML = freeSpace+" MiB";
 				this.filesystemSize[this.targetPartition] = totalSpace;
 				this.filesystemUsed[this.targetPartition] = usedSpace;
 				this.filesystemFree[this.targetPartition] = freeSpace;
@@ -1093,9 +1124,9 @@ MainAssistant.prototype.checkFilesystem = function(payload)
 				}
 				var usedSpace = Math.floor(4*matches[0]/1024+0.5);
 				var freeSpace = totalSpace - usedSpace;
-				this.filesystemSizeField.innerHTML = totalSpace+" MiB";
-				this.filesystemUsedField.innerHTML = usedSpace+" MiB";
-				this.filesystemFreeField.innerHTML = freeSpace+" MiB";
+				// this.filesystemSizeField.innerHTML = totalSpace+" MiB";
+				// this.filesystemUsedField.innerHTML = usedSpace+" MiB";
+				// this.filesystemFreeField.innerHTML = freeSpace+" MiB";
 				this.filesystemSize[this.targetPartition] = totalSpace;
 				this.filesystemUsed[this.targetPartition] = usedSpace;
 				this.filesystemFree[this.targetPartition] = freeSpace;
@@ -1123,21 +1154,6 @@ MainAssistant.prototype.checkFilesystem = function(payload)
 MainAssistant.prototype.newFilesystemSizeChanged = function(event)
 {
 	this.resizeValue = event.value || 0;
-
-	/*
-	this.status.innerHTML = ("PS:" +
-							 this.showValue(this.partitionSize[this.targetPartition], "MiB", "MiB") +
-							 ", PF: " +
-							 this.showValue(this.freeSpace, "MiB", "MiB") +
-							 ", FS: " +
-							 this.showValue(this.filesystemSize[this.targetPartition], "MiB", "MiB") +
-							 ", FU: " +
-							 this.showValue(this.filesystemUsed[this.targetPartition], "MiB", "MiB") +
-							 ", FF: " +
-							 this.showValue(this.filesystemFree[this.targetPartition], "MiB", "MiB") +
-							 ", RS: " +
-							 this.showValue(this.resizeValue, "MiB", "MiB"));
-	*/
 
 	// New size request smaller than used space
 	if ((this.resizeValue - this.filesystemUsed[this.targetPartition]) < 0) {
@@ -1173,30 +1189,28 @@ MainAssistant.prototype.resizeFilesystemTap = function(event)
 
 	if (delta > 0) {
 		this.status.innerHTML = ("Reducing from " +
-								 this.showValue(this.filesystemSize[this.targetPartition], "MiB", "MiB") +
-								 " to " +
-								 this.showValue(value, "MiB", "MiB"));
+								 this.filesystemSize[this.targetPartition] + " MiB" +
+								 " to " + value + " MiB");
 		var totalSpace = value;
 		var freeSpace = this.filesystemFree[this.targetPartition] - delta;
 		this.filesystemSize[this.targetPartition] = totalSpace;
-		this.filesystemSizeField.innerHTML = totalSpace+" MiB";
+		// this.filesystemSizeField.innerHTML = totalSpace+" MiB";
 		this.filesystemFree[this.targetPartition] = freeSpace;
-		this.filesystemFreeField.innerHTML = freeSpace+" MiB";
+		// this.filesystemFreeField.innerHTML = freeSpace+" MiB";
 	}
 	else if (delta < 0) {
 		this.status.innerHTML = ("Extending from " +
-								 this.showValue(this.filesystemSize[this.targetPartition], "MiB", "MiB") +
-								 " to " +
-								 this.showValue(value, "MiB", "MiB"));
+								 this.filesystemSize[this.targetPartition] + " MiB" +
+								 " to " + value + " MiB");
 		var totalSpace = value;
 		var freeSpace = this.filesystemFree[this.targetPartition] - delta;
 		this.filesystemSize[this.targetPartition] = totalSpace;
-		this.filesystemSizeField.innerHTML = totalSpace+" MiB";
+		// this.filesystemSizeField.innerHTML = totalSpace+" MiB";
 		this.filesystemFree[this.targetPartition] = freeSpace;
-		this.filesystemFreeField.innerHTML = freeSpace+" MiB";
+		// this.filesystemFreeField.innerHTML = freeSpace+" MiB";
 	}
 	else {
-		this.status.innerHTML = "Unchanged at "+this.showValue(value, "MiB", "MiB");
+		this.status.innerHTML = "Unchanged at " + value + " MiB";
 	}
 	
 	this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
@@ -1213,19 +1227,6 @@ MainAssistant.prototype.resizeFilesystemTap = function(event)
 MainAssistant.prototype.newPartitionSizeChanged = function(event)
 {
 	this.resizeValue = event.value || 0;
-
-	this.status.innerHTML = ("PS:" +
-							 this.showValue(this.partitionSize[this.targetPartition], "MiB", "MiB") +
-							 ", PF: " +
-							 this.showValue(this.freeSpace, "MiB", "MiB") +
-							 ", FS: " +
-							 this.showValue(this.filesystemSize[this.targetPartition], "MiB", "MiB") +
-							 ", FU: " +
-							 this.showValue(this.filesystemUsed[this.targetPartition], "MiB", "MiB") +
-							 ", FF: " +
-							 this.showValue(this.filesystemFree[this.targetPartition], "MiB", "MiB") +
-							 ", RS: " +
-							 this.showValue(this.resizeValue, "MiB", "MiB"));
 
 	// New size request smaller than filesystem size
 	if ((this.resizeValue - this.filesystemSize[this.targetPartition]) < 0) {
@@ -1261,18 +1262,16 @@ MainAssistant.prototype.resizePartitionTap = function(event)
 
 	if (delta > 0) {
 		this.status.innerHTML = ("Reducing from " +
-								 this.showValue(this.partitionSize[this.targetPartition], "MiB", "MiB") +
-								 " to " +
-								 this.showValue(value, "MiB", "MiB"));
+								 this.partitionSize[this.targetPartition] + " MiB" +
+								 " to " + value + " MiB");
 	}
 	else if (delta < 0) {
 		this.status.innerHTML = ("Extending from " +
-								 this.showValue(this.partitionSize[this.targetPartition], "MiB", "MiB") +
-								 " to " +
-								 this.showValue(value, "MiB", "MiB"));
+								 this.partitionSize[this.targetPartition] + " MiB" +
+								 " to " + value + " MiB");
 	}
 	else {
-		this.status.innerHTML = "Unchanged at "+this.showValue(value, "MiB", "MiB");
+		this.status.innerHTML = "Unchanged at " + value + " MiB";
 	}
 	
 	this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
@@ -1366,7 +1365,7 @@ MainAssistant.prototype.createPartitionTap = function(event)
 	var name = this.initialPartitionNameModel.value;
 	var value = this.initialPartitionSizeModel.value;
 
-	this.status.innerHTML = "Creating "+name+" size "+this.showValue(value, "MiB", "MiB");
+	this.status.innerHTML = "Creating " + name + " with size " + value + " MiB";
 	
 	this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
 
@@ -1387,11 +1386,6 @@ MainAssistant.prototype.createPartitionTap = function(event)
 MainAssistant.prototype.initialFilesystemSizeChanged = function(event)
 {
 	this.createValue = event.value || 0;
-
-	this.status.innerHTML = ("PF: " +
-							 this.showValue(this.freeSpace, "MiB", "MiB") +
-							 ", CS: " +
-							 this.showValue(this.createValue, "MiB", "MiB"));
 
 	// New size request larger than partition size plus free space
 	if ((this.createValue - this.partitionSize[this.targetPartition]) > 0) {
@@ -1417,7 +1411,7 @@ MainAssistant.prototype.createFilesystemTap = function(event)
 
 	this.initialFilesystemSizeField.mojo.blur();
 
-	this.status.innerHTML = "Creating "+this.targetPartition+" size "+this.showValue(value, "MiB", "MiB");
+	this.status.innerHTML = "Creating " + this.targetPartition + " with size " + value + " MiB";
 	
 	this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
 
@@ -1434,6 +1428,7 @@ MainAssistant.prototype.createFilesystemTap = function(event)
 
 	this.targetActivity = "Check Filesystem";
 	this.selectTargetActivity(this.targetActivity);
+	this.checkFilesystemButton.mojo.activate();
 	this.checkFilesystemTap();
 };
 
@@ -1445,7 +1440,7 @@ MainAssistant.prototype.deleteFilesystemTap = function(event)
 
 	// %%% Do stuff %%%
 
-	this.filesystemCheck[this.targetPartition] = false;
+	this.filesystemCheck[this.targetPartition] = true;
 	this.filesystemSize[this.targetPartition] = 0;
 	this.filesystemUsed[this.targetPartition] = 0;
 	this.filesystemFree[this.targetPartition] = 0;
@@ -1574,13 +1569,13 @@ MainAssistant.prototype.getRandomSubTitle = function()
 MainAssistant.prototype.showValue = function(value, units, maxunits)
 {
 	while ((value > 1024) || (value < -1024)) {
+		if (units == maxunits) break;
 		value = value / 1024;
 		switch (units) {
 		case "B": units = "KiB"; break;
 		case "KiB": units = "MiB"; break;
 		case "MiB": units = "GiB"; break;
 		}
-		if (units == maxunits) break;
 	}
 	return Math.round(value*1000)/1000+" "+units;
 };
