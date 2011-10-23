@@ -699,15 +699,17 @@ MainAssistant.prototype.selectTargetPartition = function(name)
 
 	if (this.targetPartition == 'unused') {
 		this.partitionSizeField.innerHTML = this.showValue(this.freeSpace, "MiB");
+		this.filesystemSizeField.innerHTML = "N/A";
+		this.filesystemUsedField.innerHTML = "N/A";
+		this.filesystemFreeField.innerHTML = "N/A";
 	}
 	else {
 		this.partitionSizeField.innerHTML = this.partitionSize[this.targetPartition]+" MiB";
+		this.filesystemSizeField.innerHTML = "Unknown";
+		this.filesystemUsedField.innerHTML = "Unknown";
+		this.filesystemFreeField.innerHTML = "Unknown";
 	}
 			
-	this.filesystemSizeField.innerHTML = "Unknown";
-	this.filesystemUsedField.innerHTML = "Unknown";
-	this.filesystemFreeField.innerHTML = "Unknown";
-
 	if (this.rebootRequired) {
 		this.targetActivity = "Reboot Required";
 	}
