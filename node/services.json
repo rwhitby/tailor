@@ -14,6 +14,10 @@
             "assistant": "Version",
 	    "public": true
              }, { 
+            "name": "userId", 
+            "assistant": "UserId",
+	    "public": true
+             }, { 
             "name": "listGroups", 
             "assistant": "ListGroups",
 	    "public": true

@@ -13,6 +13,17 @@ TailorService.status = function(callback)
     return request;
 };
 
+TailorService.userId = function(callback)
+{
+    var request = new Mojo.Service.Request(TailorService.identifier,
+	{
+	    method: 'userId',
+	    onSuccess: callback,
+	    onFailure: callback
+	});
+    return request;
+};
+
 TailorService.listGroups = function(callback)
 {
     var request = new Mojo.Service.Request(TailorService.identifier,
@@ -58,6 +69,20 @@ TailorService.checkFilesystem = function(callback, filesystem)
 		parameters: {
 			"filesystem": filesystem,
 			"subscribe": true
+		},
+	    onSuccess: callback,
+	    onFailure: callback
+	});
+    return request;
+};
+
+TailorService.unmountBind = function(callback, directory)
+{
+    var request = new Mojo.Service.Request(TailorService.identifier,
+	{
+	    method: 'unmountBind',
+		parameters: {
+			"directory": directory
 		},
 	    onSuccess: callback,
 	    onFailure: callback

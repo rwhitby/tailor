@@ -44,6 +44,7 @@ rm -f /var/palm/ls2/roles/pub/${NSRVID}.json
 /usr/bin/luna-send -n 1 palm://${NSRVID}/__quit '{}'
 
 # Install the node service executable
+sed -e '/:${NSRVID}:/d' -i /var/palm/data/jailusers
 mkdir -p /var/usr/sbin/
 sed -e "s|jail=on|jail=off|" -e "s|SERVICE_PATH=\$1|set ${NSRVDIR}\n\nSERVICE_PATH=\$1|" \
     /usr/bin/run-js-service > /var/usr/sbin/${NSRVID}

@@ -589,6 +589,38 @@ bool get_usage_method(LSHandle* lshandle, LSMessage *message, void *ctx) {
   return false;
 }
 
+// Run command to unmount a bind mount
+//
+bool unmount_bind__method(LSHandle* lshandle, LSMessage *message, void *ctx) {
+  LSError lserror;
+  LSErrorInit(&lserror);
+
+  // Local buffer to store the command
+  char command[MAXLINLEN];
+
+  // Extract the directory argument from the message
+  json_t *object = json_parse_document(LSMessageGetPayload(message));
+  json_t *directory = json_find_first_label(object, "directory");
+  if (!directory || (directory->child->type != JSON_STRING) ||
+      (strspn(directory->child->text, ALLOWED_CHARS) != strlen(directory->child->text))) {
+    if (!LSMessageRespond(message,
+			"{\"returnValue\": false, \"errorCode\": -1, \"errorText\": \"Invalid or missing directory\"}",
+			&lserror)) goto error;
+    return true;
+  }
+
+  // Store the command, so it can be used in the error report if necessary
+  sprintf(command, "/bin/umount %s 2>&1", directory->child->text);
+  
+  return simple_command(message, command);
+
+ error:
+  LSErrorPrint(&lserror, stderr);
+  LSErrorFree(&lserror);
+ end:
+  return false;
+}
+
 //
 // Run command to unmount the media partition.
 //
@@ -728,6 +760,7 @@ LSMethod luna_methods[] = {
   { "listVolumes",	list_volumes_method },
   { "listMounts",	list_mounts_method },
   { "getUsage",		get_usage_method },
+  { "unmountBind",	unmount_bind_method },
   { "unmountMedia",	unmount_media_method },
   { "resizeMedia",	resize_media_method },
   { "killResizeMedia",	kill_resize_media_method },
