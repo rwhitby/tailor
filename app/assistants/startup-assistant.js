@@ -11,6 +11,7 @@ function StartupAssistant(changelog)
     this.newMessages =
 	[
 	 // Don't forget the comma on all but the last entry
+	 { version: '0.0.2', log: [ 'Alpha release to check UI workflows and installation pipecleaning' ] },
 	 { version: '0.0.1', log: [ 'Initial skeleton' ] }
 	 ];
 	
