@@ -613,10 +613,15 @@ MainAssistant.prototype.updateVolumeList = function()
 	for (var i = 0; i < this.partitions.length; i++) {
 		var name = this.partitions[i];
 		if (this.partitionSize[name] > 0) {
-			this.volumesModel.items.push({label: this.partitionNames[name]+":", title: this.showValue(this.partitionSize[name], "MiB"), name: name, labelClass: 'left', titleClass: 'right'});
 			if (!this.targetPartition) {
 				this.targetPartition = name;
 			}
+			var selectedClass = '';
+			if (this.targetPartition == name) {
+				selectedClass = 'selected';
+			}
+			var item = {label: this.partitionNames[name]+":", title: this.showValue(this.partitionSize[name], "MiB"), name: name, labelClass: 'left', titleClass: 'right', selectedClass: selectedClass };
+			this.volumesModel.items.push(item);
 		}
 	}
 			
@@ -626,11 +631,18 @@ MainAssistant.prototype.updateVolumeList = function()
 	else {
 		this.freeSpaceModel.title = "None";
 	}
-	this.volumesModel.items.push(this.freeSpaceModel);
 
 	if (!this.targetPartition) {
 		this.targetPartition = "unused";
 	}
+	if (this.targetPartition == "unused") {
+		this.freeSpaceModel.selectedClass = 'selected';
+	}
+	else {
+		this.freeSpaceModel.selectedClass = '';
+	}
+
+	this.volumesModel.items.push(this.freeSpaceModel);
 
 	this.volumeList.mojo.noticeUpdatedItems(0, this.volumesModel.items);
 	this.volumeList.mojo.setLength(this.volumesModel.items.length);
@@ -799,6 +811,8 @@ MainAssistant.prototype.volumeTapped = function(event)
 	if (event.item.name) {
 		this.selectTargetPartition(event.item.name);
 	}
+
+	this.updateVolumeList();
 };
 
 MainAssistant.prototype.selectTargetPartition = function(name)
