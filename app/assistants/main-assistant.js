@@ -821,8 +821,6 @@ MainAssistant.prototype.selectTargetPartition = function(name)
 
 	this.updateActivityList();
 
-	this.status.innerHTML = "Ready";
-
 	this.activityTitle.innerHTML = "Select Activity for "+this.partitionNames[this.targetPartition]+" ...";
 
 	this.partitionSizeRow.className = 'palm-row last';
@@ -1214,23 +1212,11 @@ MainAssistant.prototype.resizeFilesystemTap = function(event)
 		this.status.innerHTML = ("Reducing from " +
 								 this.filesystemSize[this.targetPartition] + " MiB" +
 								 " to " + value + " MiB");
-		var totalSpace = value;
-		var freeSpace = this.filesystemFree[this.targetPartition] - delta;
-		this.filesystemSize[this.targetPartition] = totalSpace;
-		// this.filesystemSizeField.innerHTML = totalSpace+" MiB";
-		this.filesystemFree[this.targetPartition] = freeSpace;
-		// this.filesystemFreeField.innerHTML = freeSpace+" MiB";
 	}
 	else if (delta < 0) {
 		this.status.innerHTML = ("Extending from " +
 								 this.filesystemSize[this.targetPartition] + " MiB" +
 								 " to " + value + " MiB");
-		var totalSpace = value;
-		var freeSpace = this.filesystemFree[this.targetPartition] - delta;
-		this.filesystemSize[this.targetPartition] = totalSpace;
-		// this.filesystemSizeField.innerHTML = totalSpace+" MiB";
-		this.filesystemFree[this.targetPartition] = freeSpace;
-		// this.filesystemFreeField.innerHTML = freeSpace+" MiB";
 	}
 	else {
 		this.status.innerHTML = "Unchanged at " + value + " MiB";
@@ -1239,6 +1225,17 @@ MainAssistant.prototype.resizeFilesystemTap = function(event)
 	this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
 
 	// %%% Do stuff %%%
+
+	var totalSpace = value;
+	var freeSpace = this.filesystemFree[this.targetPartition] - delta;
+	this.filesystemSize[this.targetPartition] = totalSpace;
+	this.filesystemFree[this.targetPartition] = freeSpace;
+
+	this.status.innerHTML = "Filesystem Resized";
+	this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
+
+	this.updateVolumeList();
+	this.selectTargetPartition(this.targetPartition);
 
 	this.resizeFilesystemButton.mojo.deactivate();
 
@@ -1302,6 +1299,17 @@ MainAssistant.prototype.resizePartitionTap = function(event)
 	this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
 
 	// %%% Do stuff %%%
+
+	var totalSpace = value;
+	var freeSpace = this.freeSpace + delta;
+	this.partitionSize[this.targetPartition] = totalSpace;
+	this.freeSpace = freeSpace;
+
+	this.status.innerHTML = "Partition Resized";
+	this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
+
+	this.updateVolumeList();
+	this.selectTargetPartition(this.targetPartition);
 
 	this.resizePartitionButton.mojo.deactivate();
 
@@ -1411,6 +1419,10 @@ MainAssistant.prototype.createPartitionTap = function(event)
 	this.freeSpace -= value;
 	this.partitionSize[name] = value;
 	this.targetPartition = name;
+
+	this.status.innerHTML = "Partition Created";
+	this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
+
 	this.updateVolumeList();
 	this.selectTargetPartition(this.targetPartition);
 
@@ -1462,6 +1474,10 @@ MainAssistant.prototype.createFilesystemTap = function(event)
 	this.filesystemSize[this.targetPartition] = value;
 	this.filesystemUsed[this.targetPartition] = 0;
 	this.filesystemFree[this.targetPartition] = value;
+
+	this.status.innerHTML = "Filesystem Created";
+	this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
+
 	this.updateVolumeList();
 	this.selectTargetPartition(this.targetPartition);
 
@@ -1487,6 +1503,10 @@ MainAssistant.prototype.deleteFilesystemTap = function(event)
 	this.filesystemSize[this.targetPartition] = 0;
 	this.filesystemUsed[this.targetPartition] = 0;
 	this.filesystemFree[this.targetPartition] = 0;
+
+	this.status.innerHTML = "Filesystem Deleted";
+	this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
+
 	this.updateVolumeList();
 	this.selectTargetPartition(this.targetPartition);
 
@@ -1511,6 +1531,10 @@ MainAssistant.prototype.deletePartitionTap = function(event)
 	this.freeSpace += this.partitionSize[this.targetPartition];
 	this.partitionSize[this.targetPartition] = 0;
 	this.targetPartition = "unused";
+
+	this.status.innerHTML = "Partition Deleted";
+	this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
+
 	this.updateVolumeList();
 	this.selectTargetPartition(this.targetPartition);
 
