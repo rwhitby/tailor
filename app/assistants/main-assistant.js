@@ -50,7 +50,7 @@ function MainAssistant()
 
 	this.resizeFilesystemButtonModel = {
 		label: $L("Resize Filesystem"),
-		buttonClass: 'dismissal',
+		buttonClass: 'negative',
 		disabled: true
 	};
 
@@ -58,7 +58,7 @@ function MainAssistant()
 
 	this.resizePartitionButtonModel = {
 		label: $L("Resize Partition"),
-		buttonClass: 'dismissal',
+		buttonClass: 'negative',
 		disabled: true
 	};
 
@@ -74,7 +74,7 @@ function MainAssistant()
 
 	this.createPartitionButtonModel = {
 		label: $L("Create Partition"),
-		buttonClass: 'affirmative',
+		buttonClass: 'negative',
 		disabled: true
 	};
 
@@ -82,7 +82,7 @@ function MainAssistant()
 
 	this.createFilesystemButtonModel = {
 		label: $L("Create Filesystem"),
-		buttonClass: 'affirmative',
+		buttonClass: 'negative',
 		disabled: true
 	};
 
@@ -426,56 +426,41 @@ MainAssistant.prototype.heartbeatTock = function()
 MainAssistant.prototype.refresh = function()
 {
 	this.overlay.show();
-	// Only initialise this once
-	if (this.partitionSize === false) {
-		this.partitionSize = {
-			"media":"0",
-			"ext3fs":"0",
-			"cm-system":"0",
-			"cm-cache":"0",
-			"cm-data":"0",
-		};
-	}
-	// Only initialise this once
-	if (this.filesystemCheck === false) {
-		this.filesystemCheck = {
-			"media":false,
-			"ext3fs":false,
-			"cm-system":false,
-			"cm-cache":false,
-			"cm-data":false,
-		};
-	}
-	// Only initialise this once
-	if (this.filesystemSize === false) {
-		this.filesystemSize = {
-			"media":false,
-			"ext3fs":false,
-			"cm-system":false,
-			"cm-cache":false,
-			"cm-data":false,
-		};
-	}
-	// Only initialise this once
-	if (this.filesystemUsed === false) {
-		this.filesystemUsed = {
-			"media":false,
-			"ext3fs":false,
-			"cm-system":false,
-			"cm-cache":false,
-			"cm-data":false,
-		};
-	}
-	// Only initialise this once
-	if (this.filesystemFree === false) {
-		this.filesystemFree = {
-			"media":false,
-			"ext3fs":false,
-			"cm-system":false,
-			"cm-cache":false,
-			"cm-data":false,
-		};
-	}
+	this.partitionSize = {
+		"media":"0",
+		"ext3fs":"0",
+		"cm-system":"0",
+		"cm-cache":"0",
+		"cm-data":"0",
+	};
+	this.filesystemCheck = {
+		"media":false,
+		"ext3fs":false,
+		"cm-system":false,
+		"cm-cache":false,
+		"cm-data":false,
+	};
+	this.filesystemSize = {
+		"media":false,
+		"ext3fs":false,
+		"cm-system":false,
+		"cm-cache":false,
+		"cm-data":false,
+	};
+	this.filesystemUsed = {
+		"media":false,
+		"ext3fs":false,
+		"cm-system":false,
+		"cm-cache":false,
+		"cm-data":false,
+	};
+	this.filesystemFree = {
+		"media":false,
+		"ext3fs":false,
+		"cm-system":false,
+		"cm-cache":false,
+		"cm-data":false,
+	};
 	this.partitionMounts = {
 		"media":[],
 		"ext3fs":[],
@@ -487,7 +472,7 @@ MainAssistant.prototype.refresh = function()
 		"/media/internal": false,
 		"/media/ext3fs": false,
 		"/opt": false
-	}
+	};
 	this.volumesModel.items = [];
 	this.partitionSizeField.innerHTML =	"Unknown";
 	this.filesystemSizeField.innerHTML = "Unknown";
