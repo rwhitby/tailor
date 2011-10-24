@@ -8,6 +8,7 @@
 { "source": "ListVolumes.js" },
 { "source": "ListMounts.js" },
 { "source": "CheckFilesystem.js" },
+{ "source": "UnmountBind.js" },
 { "source": "UnmountMedia.js" },
 { "source": "MountMedia.js" },
 { "source": "UnmountExt3fs.js" },

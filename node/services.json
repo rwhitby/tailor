@@ -35,6 +35,10 @@
 	    "subscribe": true,
 	    "public": true
              }, { 
+            "name": "unmountBind", 
+            "assistant": "UnmountBind",
+	    "public": true
+             }, { 
             "name": "unmountMedia", 
             "assistant": "UnmountMedia",
 	    "public": true
