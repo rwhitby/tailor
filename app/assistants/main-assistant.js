@@ -611,7 +611,7 @@ MainAssistant.prototype.updateVolumeList = function()
 	}
 			
 	if (this.freeSpace) {
-		this.freeSpaceModel.title = this.showValue(this.freeSpace, "MiB");
+		this.freeSpaceModel.title = this.freeSpace +" MiB";
 	}
 	else {
 		this.freeSpaceModel.title = "None";
