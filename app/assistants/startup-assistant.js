@@ -11,6 +11,7 @@ function StartupAssistant(changelog)
     this.newMessages =
 	[
 	 // Don't forget the comma on all but the last entry
+	 { version: '0.0.6', log: [ 'Support different block sizes (Android uses 1KiB instead of 4KiB)' ] },
 	 { version: '0.0.5', log: [ 'Fixed the post-install and pre-remove scripts' ] },
 	 { version: '0.0.4', log: [ 'Added the ability to unmount items from inside jails' ] },
 	 { version: '0.0.3', log: [ 'Highlight selected partition, and update filesystem sizes during simulations' ] },
