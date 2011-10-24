@@ -1,7 +1,6 @@
 #!/bin/sh                                                                                       
 
 APPID=org.webosinternals.tailor
-CSRVID=org.webosinternals.tailor
 NSRVID=org.webosinternals.tailor.node
 
 APPS=/media/cryptofs/apps
@@ -10,23 +9,6 @@ APPS=/media/cryptofs/apps
 
 APPDIR=${APPS}/usr/palm/applications/${APPID}
 NSRVDIR=${APPS}/usr/palm/services/${NSRVID}
-CSRVDIR=${APPS}/usr/palm/applications/${APPID}/src
-
-# Remove the C service executable
-rm -f /var/usr/sbin/${CSRVID}
-
-# Remove the dbus service
-rm -f /var/palm/system-services/${CSRVID}.service
-
-# Remove the ls2 roles
-rm -f /var/palm/ls2/roles/prv/${CSRVID}.json /var/palm/ls2/roles/pub/${CSRVID}.json
-
-# Stop the C service if running
-/sbin/stop ${CSRVID} || true
-/usr/bin/killall -9 ${CSRVID} || true
-
-# Remove the upstart script
-rm -f /var/palm/event.d/${CSRVID}
 
 # Remove the node service executable
 rm -f /var/usr/sbin/${NSRVID}
