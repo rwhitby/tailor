@@ -121,9 +121,9 @@ function MainAssistant()
 	this.mountNames = {
 		"/dev/mapper/store-media":"USB (media)",
 		"/dev/mapper/store-ext3fs":"User (ext3)",
-		"/dev/mapper/store-cm-system":"Android (system)",
-		"/dev/mapper/store-cm-cache":"Android (cache)",
-		"/dev/mapper/store-cm-data":"Android (data)",
+		"/dev/mapper/store-cm--system":"Android (system)",
+		"/dev/mapper/store-cm--cache":"Android (cache)",
+		"/dev/mapper/store-cm--data":"Android (data)",
 	};
 
 	this.partitionSize = false;
@@ -976,7 +976,7 @@ MainAssistant.prototype.checkFilesystemTap = function(event)
 
 	this.status.innerHTML = "Checking "+this.partitionNames[this.targetPartition]+" ...";
 	
-	this.request = TailorService.checkFilesystem(this.checkFilesystemHandler, "/dev/mapper/store-"+this.targetPartition);
+	this.request = TailorService.checkFilesystem(this.checkFilesystemHandler, "/dev/store/"+this.targetPartition);
 }
 
 MainAssistant.prototype.checkFilesystem = function(payload)
@@ -1047,12 +1047,19 @@ MainAssistant.prototype.checkFilesystem = function(payload)
 			this.status.innerHTML = payload.stdOut;
 			var matches = payload.stdOut.match(/[0-9.]+/g);
 			if (matches.length == 2) {
-				var totalSpace = Math.floor(4*matches[0]*100/matches[1]/1024);
-				// Allow for a 16MB margin of calculation error
+				var totalSpace = Math.floor(4 * matches[0] * 100 / matches[1] / 1024);
+				var usedSpace  = Math.floor(4 * matches[0] / 1024 + 0.5);
+				if ((totalSpace - this.partitionSize[this.targetPartition]) > 16) {
+					totalSpace = Math.floor(2 * matches[0] * 100 / matches[1] / 1024);
+					usedSpace  = Math.floor(2 * matches[0] / 1024 + 0.5);
+				}
+				if ((totalSpace - this.partitionSize[this.targetPartition]) > 16) {
+					totalSpace = Math.floor(1 * matches[0] * 100 / matches[1] / 1024);
+					usedSpace  = Math.floor(1 * matches[0] / 1024 + 0.5);
+				}
 				if ((this.partitionSize[this.targetPartition] - totalSpace) < 16) {
 					totalSpace = this.partitionSize[this.targetPartition];
 				}
-				var usedSpace = Math.floor(4*matches[0]/1024+0.5);
 				var freeSpace = totalSpace - usedSpace;
 				// this.filesystemSizeField.innerHTML = totalSpace+" MiB";
 				// this.filesystemUsedField.innerHTML = usedSpace+" MiB";
