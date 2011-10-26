@@ -35,6 +35,16 @@
 	    "subscribe": true,
 	    "public": true
              }, { 
+            "name": "repairFilesystem", 
+            "assistant": "RepairFilesystem",
+	    "subscribe": true,
+	    "public": true
+             }, { 
+            "name": "resizeMedia", 
+            "assistant": "ResizeMedia",
+	    "subscribe": true,
+	    "public": true
+             }, { 
             "name": "unmountBind", 
             "assistant": "UnmountBind",
 	    "public": true

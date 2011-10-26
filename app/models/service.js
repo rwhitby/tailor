@@ -76,6 +76,21 @@ TailorService.checkFilesystem = function(callback, filesystem)
     return request;
 };
 
+TailorService.repairFilesystem = function(callback, filesystem)
+{
+    var request = new Mojo.Service.Request(TailorService.identifier,
+	{
+	    method: 'repairFilesystem',
+		parameters: {
+			"filesystem": filesystem,
+			"subscribe": true
+		},
+	    onSuccess: callback,
+	    onFailure: callback
+	});
+    return request;
+};
+
 TailorService.unmountBind = function(callback, directory)
 {
     var request = new Mojo.Service.Request(TailorService.identifier,
@@ -108,7 +123,8 @@ TailorService.resizeMedia = function(callback, size)
 	    method: 'resizeMedia',
 		parameters:
 		{
-			"size": size
+			"size": size,
+			"subscribe": true
 		},
 	    onSuccess: callback,
 	    onFailure: callback
