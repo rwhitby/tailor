@@ -262,6 +262,7 @@ MainAssistant.prototype.setup = function()
 	this.resizeExt3fsHandler = this.resizeExt3fs.bindAsEventListener(this);
 	this.newPartitionSizeChangedHandler =  this.newPartitionSizeChanged.bindAsEventListener(this);
 	this.resizePartitionTapHandler = this.resizePartitionTap.bindAsEventListener(this);
+	this.resizePartitionHandler = this.resizePartition.bindAsEventListener(this);
 	this.mountPartitionTapHandler = this.mountPartitionTap.bindAsEventListener(this);
 	this.mountPartitionHandler = this.mountPartition.bindAsEventListener(this);
 	this.initialPartitionSizeChangedHandler =  this.initialPartitionSizeChanged.bindAsEventListener(this);
@@ -1125,8 +1126,7 @@ MainAssistant.prototype.checkExt3fs = function(payload)
 		this.request.cancel();
 		payload = {};
 		payload.returnValue = true;
-		payload.stdOut = " "+(this.partitionSize[this.targetPartition]-1024)*1024/4+" blocks used (100.0%)";
-		// payload.stdOut = " "+(this.partitionSize[this.targetPartition])*1024/4+" blocks used (100.0%)";
+		payload.stdOut = "foo: 12/262144 files (0.0% non-contiguous), 51311/1048576 blocks";
 		payload.stage = "end";
 	}
 
@@ -1157,25 +1157,20 @@ MainAssistant.prototype.checkExt3fs = function(payload)
 	}
 	else if (payload.stdOut) {
 		this.status.innerHTML = payload.stdOut;
-		if (payload.stdOut.match(/^Pass /)) {
+		if (payload.stdOut.match(/.+ files .+ blocks/)) {
 			this.status.innerHTML = payload.stdOut;
-		}
-		if (payload.stdOut.match(/^\s+\d+ blocks used .[0-9.]+%.$/)) {
-			this.status.innerHTML = payload.stdOut;
-			var matches = payload.stdOut.match(/[0-9.]+/g);
-			if (matches.length == 2) {
-				var totalSpace = Math.floor(4 * matches[0] * 100 / matches[1] / 1024);
-				var usedSpace  = Math.floor(4 * matches[0] / 1024 + 0.5);
-				if ((totalSpace - this.partitionSize[this.targetPartition]) > 16) {
-					totalSpace = Math.floor(2 * matches[0] * 100 / matches[1] / 1024);
-					usedSpace  = Math.floor(2 * matches[0] / 1024 + 0.5);
+			var data = payload.stdOut.split(":", 2);
+			var matches = data[1].match(/[0-9.]+/g);
+			if (matches.length == 5) {
+				var totalSpace = Math.ceil(4 * matches[4] / 1024);
+				var usedSpace  = Math.ceil(4 * matches[3] / 1024);
+				if ((totalSpace - this.partitionSize[this.targetPartition]) > 0) {
+					totalSpace = Math.ceil(2 * matches[4] / 1024);
+					usedSpace  = Math.ceil(2 * matches[3] / 1024);
 				}
-				if ((totalSpace - this.partitionSize[this.targetPartition]) > 16) {
-					totalSpace = Math.floor(1 * matches[0] * 100 / matches[1] / 1024);
-					usedSpace  = Math.floor(1 * matches[0] / 1024 + 0.5);
-				}
-				if ((this.partitionSize[this.targetPartition] - totalSpace) < 1) {
-					totalSpace = this.partitionSize[this.targetPartition];
+				if ((totalSpace - this.partitionSize[this.targetPartition]) > 0) {
+					totalSpace = Math.ceil(1 * matches[4] / 1024);
+					usedSpace  = Math.ceil(1 * matches[3] / 1024);
 				}
 				var freeSpace = totalSpace - usedSpace;
 				// this.filesystemSizeField.innerHTML = totalSpace+" MiB";
@@ -1388,9 +1383,9 @@ MainAssistant.prototype.resizeMedia = function(payload)
 	if (payload.returnValue === false) {
 		this.status.innerHTML = "Error resizing "+this.partitionNames[this.targetPartition]+" ...";
 		this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
-		// this.errorMessage('<b>Service Error (repairFilesystem):</b><br>'+payload.errorText, [ payload.stdErr ]);
-		this.errorMessage('<b>Filesystem Repair Failed</b>');
-		this.repairFilesystemButton.mojo.deactivate();
+		// this.errorMessage('<b>Service Error (resizeFilesystem):</b><br>'+payload.errorText, [ payload.stdErr ]);
+		this.errorMessage('<b>Filesystem Resize Failed</b>');
+		this.resizeFilesystemButton.mojo.deactivate();
 		this.overlay.hide();
 		return;
 	}
@@ -1431,9 +1426,9 @@ MainAssistant.prototype.resizeExt3fs = function(payload)
 	if (payload.returnValue === false) {
 		this.status.innerHTML = "Error resizing "+this.partitionNames[this.targetPartition]+" ...";
 		this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
-		// this.errorMessage('<b>Service Error (repairFilesystem):</b><br>'+payload.errorText, [ payload.stdErr ]);
-		this.errorMessage('<b>Filesystem Repair Failed</b>');
-		this.repairFilesystemButton.mojo.deactivate();
+		// this.errorMessage('<b>Service Error (resizeFilesystem):</b><br>'+payload.errorText, [ payload.stdErr ]);
+		this.errorMessage('<b>Filesystem Resize Failed</b>');
+		this.resizeFilesystemButton.mojo.deactivate();
 		this.overlay.hide();
 		return;
 	}
@@ -1515,25 +1510,48 @@ MainAssistant.prototype.resizePartitionTap = function(event)
 	
 	this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
 
-	// %%% Do stuff %%%
+	this.request = TailorService.resizePartition(this.resizePartitionHandler,
+												 "/dev/store/"+this.targetPartition, value);
+};
 
-	var totalSpace = value;
-	var freeSpace = this.freeSpace + delta;
-	this.partitionSize[this.targetPartition] = totalSpace;
-	this.freeSpace = freeSpace;
+MainAssistant.prototype.resizePartition = function(payload)
+{
+	if (Mojo.Environment.DeviceInfo.modelNameAscii == 'Emulator') {
+		this.request.cancel();
+		payload = {};
+		payload.returnValue = true;
+		payload.stage = "end";
+	}
 
-	this.status.innerHTML = "Partition Resized";
-	this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
+	if (payload.returnValue === false) {
+		this.status.innerHTML = "Error resizing "+this.partitionNames[this.targetPartition]+" ...";
+		this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
+		// this.errorMessage('<b>Service Error (resizePartition):</b><br>'+payload.errorText, [ payload.stdErr ]);
+		this.errorMessage('<b>Partition Resizing Failed</b>');
+		this.resizePartitionButton.mojo.deactivate();
+		this.overlay.hide();
+		return;
+	}
 
-	this.updateVolumeList();
-	this.selectTargetPartition(this.targetPartition);
+	if (payload.stdErr) {
+		if (!payload.stdErr.match(/THIS MAY DESTROY YOUR DATA/) &&
+			!payload.stdErr.match(/leaked on lvresize invocation/)) {
+			this.status.innerHTML = payload.stdErr;
+		}
+	}
+	else if (payload.stdOut) {
+		this.status.innerHTML = payload.stdOut;
+	}
+	
+	if (payload.stage == "end") {
 
-	this.resizePartitionButton.mojo.deactivate();
+		this.status.innerHTML = "Partition Resized";
+		this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
 
-	this.targetActivity = "Mount Partition";
-	this.selectTargetActivity(this.targetActivity);
-
-	this.overlay.hide();
+		this.resizePartitionButton.mojo.deactivate();
+		
+		this.refresh();
+	}
 };
 
 MainAssistant.prototype.mountPartitionTap = function(event)

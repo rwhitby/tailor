@@ -1,8 +1,8 @@
 {
 	"title": "Tailor",
 	"id": "org.webosinternals.tailor",
-	"version": "0.0.9",
-	"release_date":	"26-October-2011",
+	"version": "0.1.0",
+	"release_date":	"27-October-2011",
 	"vendor": "WebOS Internals",
 	"vendor_email":	"support@webos-internals.org",
 	"vendor_url": "http://www.webos-internals.org/wiki/Application:Tailor",

@@ -1,19 +1,19 @@
-var CheckExt3fs = function() {
+var ResizePartition = function() {
 };
   
-CheckExt3fs.prototype.run = function(future, subscription) {  
+ResizePartition.prototype.run = function(future, subscription) {  
     var args = this.controller.args;
 
-    console.log("Tailor/CheckExt3fs: Called by "+this.controller.message.applicationID().split(" ")[0]+
+    console.log("Tailor/ResizePartition: Called by "+this.controller.message.applicationID().split(" ")[0]+
 		" via "+this.controller.message.senderServiceName());
 
-    var argv = ["/sbin/e2fsck", "-n", "-f", args.filesystem];
+    var argv = ["/usr/sbin/lvresize", "-f", "-L", args.size+"M", args.filesystem];
 
-    console.log("Tailor/CheckExt3fs: Running command: "+argv.join(' '));
+    console.log("Tailor/ResizePartition: Running command: "+argv.join(' '));
 
     var command = spawn(argv[0], argv.slice(1));
 
-    console.log("Tailor/CheckExt3fs: Spawned child (pid "+command.pid+")");
+    console.log("Tailor/ResizePartition: Spawned child (pid "+command.pid+")");
 
     future.result = { stage: "start" };
 
