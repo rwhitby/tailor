@@ -647,6 +647,7 @@ MainAssistant.prototype.updateActivityList = function()
 			else {
 				if (this.filesystemSize[this.targetPartition] != 0) {
 					this.targetActivityModel.choices.push({'label':"Mount Partition", 'value':"Mount Partition"});
+					this.targetActivityModel.choices.push({'label':"Check Filesystem", 'value':"Check Filesystem"});
 					this.targetActivityModel.choices.push({'label':"Resize Filesystem", 'value':"Resize Filesystem"});
 				}
 				this.targetActivityModel.choices.push({'label':"Resize Partition", 'value':"Resize Partition"});

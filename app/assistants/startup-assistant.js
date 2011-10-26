@@ -11,6 +11,9 @@ function StartupAssistant(changelog)
     this.newMessages =
 	[
 	 // Don't forget the comma on all but the last entry
+	 { version: '0.0.7', log: [ 'Added the ability to resize the media partition',
+								'This is a potentially destructive operation',
+								'You have been warned' ] },
 	 { version: '0.0.6', log: [ 'Support different block sizes (Android uses 1KiB instead of 4KiB)' ] },
 	 { version: '0.0.5', log: [ 'Fixed the post-install and pre-remove scripts' ] },
 	 { version: '0.0.4', log: [ 'Added the ability to unmount items from inside jails' ] },
