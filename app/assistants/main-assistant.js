@@ -963,7 +963,7 @@ MainAssistant.prototype.targetActivityChanged = function(event)
 		this.controller.modelChanged(this.deletePartitionButtonModel);
 	}
 
-	this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
+	this.controller.getSceneScroller().mojo.revealElement.delay(1, this.statusGroup);
 };
 
 MainAssistant.prototype.unmountPartitionTap = function(event)
