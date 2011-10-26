@@ -152,6 +152,23 @@ TailorService.resizeExt3fs = function(callback, filesystem, size)
     return request;
 };
 
+TailorService.resizePartition = function(callback, filesystem, size)
+{
+    var request = new Mojo.Service.Request(TailorService.identifier,
+	{
+	    method: 'resizePartition',
+		parameters:
+		{
+			"filesystem": filesystem,
+			"size": size,
+			"subscribe": true
+		},
+	    onSuccess: callback,
+	    onFailure: callback
+	});
+    return request;
+};
+
 TailorService.unmountBind = function(callback, directory)
 {
     var request = new Mojo.Service.Request(TailorService.identifier,

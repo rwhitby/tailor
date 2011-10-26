@@ -7,7 +7,7 @@ CheckExt3fs.prototype.run = function(future, subscription) {
     console.log("Tailor/CheckExt3fs: Called by "+this.controller.message.applicationID().split(" ")[0]+
 		" via "+this.controller.message.senderServiceName());
 
-    var argv = ["/sbin/e2fsck", "-n", "-f", "-v", args.filesystem];
+    var argv = ["/sbin/e2fsck", "-n", "-f", args.filesystem];
 
     console.log("Tailor/CheckExt3fs: Running command: "+argv.join(' '));
 
@@ -20,7 +20,6 @@ CheckExt3fs.prototype.run = function(future, subscription) {
     var stdOutData = "";
     command.stdout.setEncoding('utf8');
     command.stdout.on('data', function (data) {
-	    console.log("Got stdout data");
 	    if (stdOutData != "") {
 		data = stdOutData + data;
 		stdOutData = "";
@@ -34,7 +33,6 @@ CheckExt3fs.prototype.run = function(future, subscription) {
 		stdOutData = stdOutLines.pop();
 		while (stdOutLines.length) {
 		    var s = subscription.get();
-		    console.log("Sent stdout status");
 		    s.result = { stage: "status", stdOut: stdOutLines.shift() };
 		}
 	    }
@@ -44,7 +42,6 @@ CheckExt3fs.prototype.run = function(future, subscription) {
     var stdErrData = "";
     command.stderr.setEncoding('utf8');
     command.stderr.on('data', function (data) {
-	    console.log("Got stderr data");
 	    stdErrTotal += data;
 	    if (stdErrData != "") {
 		data = stdErrData + data;
@@ -59,7 +56,6 @@ CheckExt3fs.prototype.run = function(future, subscription) {
 		stdErrData = stdErrLines.pop();
 		while (stdErrLines.length) {
 		    var s = subscription.get();
-		    console.log("Sent stderr status");
 		    s.result = { stage: "status", stdErr: stdErrLines.shift() };
 		}
 	    }

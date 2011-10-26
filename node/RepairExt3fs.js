@@ -7,7 +7,7 @@ RepairExt3fs.prototype.run = function(future, subscription) {
     console.log("Tailor/RepairExt3fs: Called by "+this.controller.message.applicationID().split(" ")[0]+
 		" via "+this.controller.message.senderServiceName());
 
-    var argv = ["/sbin/e2fsck", "-y", "-f", "-v", args.filesystem];
+    var argv = ["/sbin/e2fsck", "-y", "-f", args.filesystem];
 
     console.log("Tailor/RepairExt3fs: Running command: "+argv.join(' '));
 
