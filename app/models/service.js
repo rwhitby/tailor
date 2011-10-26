@@ -91,6 +91,39 @@ TailorService.repairFilesystem = function(callback, filesystem)
     return request;
 };
 
+TailorService.resizeMedia = function(callback, size)
+{
+    var request = new Mojo.Service.Request(TailorService.identifier,
+	{
+	    method: 'resizeMedia',
+		parameters:
+		{
+			"size": size,
+			"subscribe": true
+		},
+	    onSuccess: callback,
+	    onFailure: callback
+	});
+    return request;
+};
+
+TailorService.resizeExt3fs = function(callback, filesystem, size)
+{
+    var request = new Mojo.Service.Request(TailorService.identifier,
+	{
+	    method: 'resizeExt3fs',
+		parameters:
+		{
+			"filesystem": filesystem,
+			"size": size,
+			"subscribe": true
+		},
+	    onSuccess: callback,
+	    onFailure: callback
+	});
+    return request;
+};
+
 TailorService.unmountBind = function(callback, directory)
 {
     var request = new Mojo.Service.Request(TailorService.identifier,
@@ -110,22 +143,6 @@ TailorService.unmountMedia = function(callback)
     var request = new Mojo.Service.Request(TailorService.identifier,
 	{
 	    method: 'unmountMedia',
-	    onSuccess: callback,
-	    onFailure: callback
-	});
-    return request;
-};
-
-TailorService.resizeMedia = function(callback, size)
-{
-    var request = new Mojo.Service.Request(TailorService.identifier,
-	{
-	    method: 'resizeMedia',
-		parameters:
-		{
-			"size": size,
-			"subscribe": true
-		},
 	    onSuccess: callback,
 	    onFailure: callback
 	});

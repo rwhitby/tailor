@@ -45,6 +45,11 @@
 	    "subscribe": true,
 	    "public": true
              }, { 
+            "name": "resizeExt3fs", 
+            "assistant": "ResizeExt3fs",
+	    "subscribe": true,
+	    "public": true
+             }, { 
             "name": "unmountBind", 
             "assistant": "UnmountBind",
 	    "public": true

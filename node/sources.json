@@ -10,6 +10,7 @@
 { "source": "CheckFilesystem.js" },
 { "source": "RepairFilesystem.js" },
 { "source": "ResizeMedia.js" },
+{ "source": "ResizeExt3fs.js" },
 { "source": "UnmountBind.js" },
 { "source": "UnmountMedia.js" },
 { "source": "MountMedia.js" },

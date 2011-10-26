@@ -257,6 +257,7 @@ MainAssistant.prototype.setup = function()
 	this.newFilesystemSizeChangedHandler =  this.newFilesystemSizeChanged.bindAsEventListener(this);
 	this.resizeFilesystemTapHandler = this.resizeFilesystemTap.bindAsEventListener(this);
 	this.resizeMediaHandler = this.resizeMedia.bindAsEventListener(this);
+	this.resizeExt3fsHandler = this.resizeExt3fs.bindAsEventListener(this);
 	this.newPartitionSizeChangedHandler =  this.newPartitionSizeChanged.bindAsEventListener(this);
 	this.resizePartitionTapHandler = this.resizePartitionTap.bindAsEventListener(this);
 	this.mountPartitionTapHandler = this.mountPartitionTap.bindAsEventListener(this);
@@ -1061,7 +1062,7 @@ MainAssistant.prototype.checkFilesystem = function(payload)
 	}
 
 	if (payload.stdErr) {
-		// this.status.innerHTML = payload.stdErr;
+		this.status.innerHTML = payload.stdErr;
 	}
 	else if (payload.stdOut) {
 		this.status.innerHTML = payload.stdOut;
@@ -1084,8 +1085,8 @@ MainAssistant.prototype.checkFilesystem = function(payload)
 			var matches = payload.stdOut.match(/\d+/g);
 			if (matches.length == 3) {
 				var totalSpace = Math.floor(((matches[2]*this.clusterSize)+this.dataOffset)/1048756);
-				// Allow for a 16MB margin of calculation error
-				if ((this.partitionSize[this.targetPartition] - totalSpace) < 16) {
+				// Allow for a 1MB margin of calculation error
+				if ((this.partitionSize[this.targetPartition] - totalSpace) < 1) {
 					totalSpace = this.partitionSize[this.targetPartition];
 				}
 				var freeSpace = Math.floor(((matches[2]-matches[1])*this.clusterSize)/1048756);
@@ -1112,7 +1113,7 @@ MainAssistant.prototype.checkFilesystem = function(payload)
 					totalSpace = Math.floor(1 * matches[0] * 100 / matches[1] / 1024);
 					usedSpace  = Math.floor(1 * matches[0] / 1024 + 0.5);
 				}
-				if ((this.partitionSize[this.targetPartition] - totalSpace) < 16) {
+				if ((this.partitionSize[this.targetPartition] - totalSpace) < 1) {
 					totalSpace = this.partitionSize[this.targetPartition];
 				}
 				var freeSpace = totalSpace - usedSpace;
@@ -1175,7 +1176,7 @@ MainAssistant.prototype.repairFilesystem = function(payload)
 	}
 
 	if (payload.stdErr) {
-		// this.status.innerHTML = payload.stdErr;
+		this.status.innerHTML = payload.stdErr;
 	}
 	else if (payload.stdOut) {
 		this.status.innerHTML = payload.stdOut;
@@ -1257,24 +1258,9 @@ MainAssistant.prototype.resizeFilesystemTap = function(event)
 	if (this.targetPartition == "media") {
 		this.request = TailorService.resizeMedia(this.resizeMediaHandler, value);
 	}
-	else {
-		var totalSpace = value;
-		var freeSpace = this.filesystemFree[this.targetPartition] - delta;
-		this.filesystemSize[this.targetPartition] = totalSpace;
-		this.filesystemFree[this.targetPartition] = freeSpace;
-	
-		this.status.innerHTML = "Filesystem Resized";
-		this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
-
-		this.updateVolumeList();
-		this.selectTargetPartition(this.targetPartition);
-
-		this.resizeFilesystemButton.mojo.deactivate();
-
-		this.targetActivity = "Resize Partition";
-		this.selectTargetActivity(this.targetActivity);
-
-		this.overlay.hide();
+	else if (this.targetPartition != "unused") {
+		this.request = TailorService.resizeExt3fs(this.resizeExt3fsHandler,
+												  "/dev/store/"+this.targetPartition, value);
 	}
 };
 
@@ -1287,13 +1273,64 @@ MainAssistant.prototype.resizeMedia = function(payload)
 		payload.stage = "end";
 	}
 
+	if (payload.returnValue === false) {
+		this.status.innerHTML = "Error resizing "+this.partitionNames[this.targetPartition]+" ...";
+		this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
+		// this.errorMessage('<b>Service Error (repairFilesystem):</b><br>'+payload.errorText, [ payload.stdErr ]);
+		this.errorMessage('<b>Filesystem Repair Failed</b>');
+		this.repairFilesystemButton.mojo.deactivate();
+		this.overlay.hide();
+		return;
+	}
+
 	if (payload.stdErr) {
-		// this.status.innerHTML = payload.stdErr;
+		this.status.innerHTML = payload.stdErr;
 	}
 	else if (payload.stdOut) {
-		if (payload.stdOut.match(/\d+ percent complete./)) {
-			this.status.innerHTML = payload.stdOut;
-		}
+		this.status.innerHTML = payload.stdOut;
+	}
+	
+	if (payload.stage == "end") {
+
+		this.status.innerHTML = "Filesystem Resize Complete";
+		this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
+
+		this.updateVolumeList();
+		this.selectTargetPartition(this.targetPartition);
+
+		this.resizeFilesystemButton.mojo.deactivate();
+		
+		this.targetActivity = "Check Filesystem";
+		this.selectTargetActivity(this.targetActivity);
+		this.checkFilesystemButton.mojo.activate();
+		this.checkFilesystemTap();
+	}
+};
+
+MainAssistant.prototype.resizeExt3fs = function(payload)
+{
+	if (Mojo.Environment.DeviceInfo.modelNameAscii == 'Emulator') {
+		this.request.cancel();
+		payload = {};
+		payload.returnValue = true;
+		payload.stage = "end";
+	}
+
+	if (payload.returnValue === false) {
+		this.status.innerHTML = "Error resizing "+this.partitionNames[this.targetPartition]+" ...";
+		this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
+		// this.errorMessage('<b>Service Error (repairFilesystem):</b><br>'+payload.errorText, [ payload.stdErr ]);
+		this.errorMessage('<b>Filesystem Repair Failed</b>');
+		this.repairFilesystemButton.mojo.deactivate();
+		this.overlay.hide();
+		return;
+	}
+
+	if (payload.stdErr) {
+		this.status.innerHTML = payload.stdErr;
+	}
+	else if (payload.stdOut) {
+		this.status.innerHTML = payload.stdOut;
 	}
 	
 	if (payload.stage == "end") {

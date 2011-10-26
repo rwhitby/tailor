@@ -1,19 +1,19 @@
-var ResizeMedia = function() {
+var ResizeExt3fs = function() {
 };
   
-ResizeMedia.prototype.run = function(future, subscription) {  
+ResizeExt3fs.prototype.run = function(future, subscription) {  
     var args = this.controller.args;
 
-    console.log("Tailor/ResizeMedia: Called by "+this.controller.message.applicationID().split(" ")[0]+
+    console.log("Tailor/ResizeExt3fs: Called by "+this.controller.message.applicationID().split(" ")[0]+
 		" via "+this.controller.message.senderServiceName());
 
-    var argv = ["/bin/resizefat", "-v", "/dev/store/media", args.size+"M"];
+    var argv = ["/sbin/resize2fs", "-f", "-p", args.filesystem, args.size+"M"];
 
-    console.log("Tailor/ResizeMedia: Running command: "+argv.join(' '));
+    console.log("Tailor/ResizeExt3fs: Running command: "+argv.join(' '));
 
     var command = spawn(argv[0], argv.slice(1));
 
-    console.log("Tailor/ResizeMedia: Spawned child (pid "+command.pid+")");
+    console.log("Tailor/ResizeExt3fs: Spawned child (pid "+command.pid+")");
 
     future.result = { stage: "start" };
 

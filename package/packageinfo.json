@@ -2,7 +2,7 @@
   "id": "org.webosinternals.tailor",
   "package_format_version": 2,
   "loc_name": "Tailor",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "icon": "icon.png",
   "miniicon": "icon.png",
   "vendor": "WebOS Internals",
