@@ -61,11 +61,25 @@ TailorService.listMounts = function(callback)
     return request;
 };
 
-TailorService.checkFilesystem = function(callback, filesystem)
+TailorService.checkMedia = function(callback)
 {
     var request = new Mojo.Service.Request(TailorService.identifier,
 	{
-	    method: 'checkFilesystem',
+	    method: 'checkMedia',
+		parameters: {
+			"subscribe": true
+		},
+	    onSuccess: callback,
+	    onFailure: callback
+	});
+    return request;
+};
+
+TailorService.checkExt3fs = function(callback, filesystem)
+{
+    var request = new Mojo.Service.Request(TailorService.identifier,
+	{
+	    method: 'checkExt3fs',
 		parameters: {
 			"filesystem": filesystem,
 			"subscribe": true
@@ -76,11 +90,25 @@ TailorService.checkFilesystem = function(callback, filesystem)
     return request;
 };
 
-TailorService.repairFilesystem = function(callback, filesystem)
+TailorService.repairMedia = function(callback)
 {
     var request = new Mojo.Service.Request(TailorService.identifier,
 	{
-	    method: 'repairFilesystem',
+	    method: 'repairMedia',
+		parameters: {
+			"subscribe": true
+		},
+	    onSuccess: callback,
+	    onFailure: callback
+	});
+    return request;
+};
+
+TailorService.repairExt3fs = function(callback, filesystem)
+{
+    var request = new Mojo.Service.Request(TailorService.identifier,
+	{
+	    method: 'repairExt3fs',
 		parameters: {
 			"filesystem": filesystem,
 			"subscribe": true

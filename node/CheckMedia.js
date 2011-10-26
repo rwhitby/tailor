@@ -1,25 +1,26 @@
-var RepairFilesystem = function() {
+var CheckMedia = function() {
 };
   
-RepairFilesystem.prototype.run = function(future, subscription) {  
+CheckMedia.prototype.run = function(future, subscription) {  
     var args = this.controller.args;
 
-    console.log("Tailor/RepairFilesystem: Called by "+this.controller.message.applicationID().split(" ")[0]+
+    console.log("Tailor/CheckMedia: Called by "+this.controller.message.applicationID().split(" ")[0]+
 		" via "+this.controller.message.senderServiceName());
 
-    var argv = ["/sbin/fsck", "-y", "-f", "-v", args.filesystem];
+    var argv = ["/usr/sbin/fsck.vfat", "-n", "-v", "-V", "/dev/store/media"];
 
-    console.log("Tailor/RepairFilesystem: Running command: "+argv.join(' '));
+    console.log("Tailor/CheckMedia: Running command: "+argv.join(' '));
 
     var command = spawn(argv[0], argv.slice(1));
 
-    console.log("Tailor/RepairFilesystem: Spawned child (pid "+command.pid+")");
+    console.log("Tailor/CheckMedia: Spawned child (pid "+command.pid+")");
 
     future.result = { stage: "start" };
 
     var stdOutData = "";
     command.stdout.setEncoding('utf8');
     command.stdout.on('data', function (data) {
+	    console.log("Got stdout data");
 	    if (stdOutData != "") {
 		data = stdOutData + data;
 		stdOutData = "";
@@ -33,6 +34,7 @@ RepairFilesystem.prototype.run = function(future, subscription) {
 		stdOutData = stdOutLines.pop();
 		while (stdOutLines.length) {
 		    var s = subscription.get();
+		    console.log("Sent stdout status");
 		    s.result = { stage: "status", stdOut: stdOutLines.shift() };
 		}
 	    }
@@ -42,6 +44,7 @@ RepairFilesystem.prototype.run = function(future, subscription) {
     var stdErrData = "";
     command.stderr.setEncoding('utf8');
     command.stderr.on('data', function (data) {
+	    console.log("Got stderr data");
 	    stdErrTotal += data;
 	    if (stdErrData != "") {
 		data = stdErrData + data;
@@ -56,6 +59,7 @@ RepairFilesystem.prototype.run = function(future, subscription) {
 		stdErrData = stdErrLines.pop();
 		while (stdErrLines.length) {
 		    var s = subscription.get();
+		    console.log("Sent stderr status");
 		    s.result = { stage: "status", stdErr: stdErrLines.shift() };
 		}
 	    }

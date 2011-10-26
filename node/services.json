@@ -30,13 +30,23 @@
             "assistant": "ListMounts",
 	    "public": true
              }, { 
-            "name": "checkFilesystem", 
-            "assistant": "CheckFilesystem",
+            "name": "checkMedia", 
+            "assistant": "CheckMedia",
 	    "subscribe": true,
 	    "public": true
              }, { 
-            "name": "repairFilesystem", 
-            "assistant": "RepairFilesystem",
+            "name": "checkExt3fs", 
+            "assistant": "CheckExt3fs",
+	    "subscribe": true,
+	    "public": true
+             }, { 
+            "name": "repairMedia", 
+            "assistant": "RepairMedia",
+	    "subscribe": true,
+	    "public": true
+             }, { 
+            "name": "repairExt3fs", 
+            "assistant": "RepairExt3fs",
 	    "subscribe": true,
 	    "public": true
              }, { 

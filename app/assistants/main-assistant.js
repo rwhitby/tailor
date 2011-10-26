@@ -251,9 +251,11 @@ MainAssistant.prototype.setup = function()
 	this.unmountPartitionTapHandler = this.unmountPartitionTap.bindAsEventListener(this);
 	this.unmountPartitionHandler = this.unmountPartition.bindAsEventListener(this);
 	this.checkFilesystemTapHandler = this.checkFilesystemTap.bindAsEventListener(this);
-	this.checkFilesystemHandler = this.checkFilesystem.bindAsEventListener(this);
+	this.checkMediaHandler = this.checkMedia.bindAsEventListener(this);
+	this.checkExt3fsHandler = this.checkExt3fs.bindAsEventListener(this);
 	this.repairFilesystemTapHandler = this.repairFilesystemTap.bindAsEventListener(this);
-	this.repairFilesystemHandler = this.repairFilesystem.bindAsEventListener(this);
+	this.repairMediaHandler = this.repairMedia.bindAsEventListener(this);
+	this.repairExt3fsHandler = this.repairExt3fs.bindAsEventListener(this);
 	this.newFilesystemSizeChangedHandler =  this.newFilesystemSizeChanged.bindAsEventListener(this);
 	this.resizeFilesystemTapHandler = this.resizeFilesystemTap.bindAsEventListener(this);
 	this.resizeMediaHandler = this.resizeMedia.bindAsEventListener(this);
@@ -1020,22 +1022,111 @@ MainAssistant.prototype.checkFilesystemTap = function(event)
 
 	this.status.innerHTML = "Checking "+this.partitionNames[this.targetPartition]+" ...";
 	
-	this.request = TailorService.checkFilesystem(this.checkFilesystemHandler, "/dev/store/"+this.targetPartition);
+	if (this.targetPartition == "media") {
+		this.request = TailorService.checkMedia(this.checkMediaHandler);
+	}
+	else if (this.targetPartition != "unused") {
+		this.request = TailorService.checkExt3fs(this.checkExt3fsHandler, "/dev/store/"+this.targetPartition);
+	}
 }
 
-MainAssistant.prototype.checkFilesystem = function(payload)
+MainAssistant.prototype.checkMedia = function(payload)
 {
 	if (Mojo.Environment.DeviceInfo.modelNameAscii == 'Emulator') {
 		this.request.cancel();
 		payload = {};
 		payload.returnValue = true;
-		if (this.targetPartition == "media") {
-			payload.stdOut = " "+this.partitionSize[this.targetPartition]*1024/8+" blocks used (50.0%)";
+		payload.stdOut = " "+this.partitionSize[this.targetPartition]*1024/8+" blocks used (50.0%)";
+		payload.stage = "end";
+	}
+
+	if (payload.returnValue === false) {
+
+		this.filesystemCheck[this.targetPartition] = false;
+		this.filesystemRepair[this.targetPartition] = true;
+
+		this.status.innerHTML = "Error checking "+this.partitionNames[this.targetPartition]+" ...";
+		this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
+
+		this.errorMessage('<b>Filesystem Check Failed</b><br>This is a potentially destructive situation for your data. You must either attempt to repair your filesystem or reboot and hope that webOS repairs it for you.');
+
+		this.updateVolumeList();
+		this.selectTargetPartition(this.targetPartition);
+
+		this.checkFilesystemButton.mojo.deactivate();
+
+		this.targetActivity = "Repair Filesystem";
+		this.selectTargetActivity(this.targetActivity);
+
+		this.overlay.hide();
+		return;
+	}
+
+	if (payload.stdErr) {
+		this.status.innerHTML = payload.stdErr;
+	}
+	else if (payload.stdOut) {
+		this.status.innerHTML = payload.stdOut;
+		if (payload.stdOut.match(/^\s+\d+ bytes per cluster$/)) {
+			var matches = payload.stdOut.match(/\d+/g);
+			if (matches.length == 1) {
+				this.clusterSize = Math.floor(matches[0]);
+			}
 		}
-		if (this.targetPartition == "ext3fs") {
-			payload.stdOut = " "+(this.partitionSize[this.targetPartition]-1024)*1024/4+" blocks used (100.0%)";
-			// payload.stdOut = " "+(this.partitionSize[this.targetPartition])*1024/4+" blocks used (100.0%)";
+		if (payload.stdOut.match(/^Data area starts at byte \d+ .sector \d+.$/)) {
+			var matches = payload.stdOut.match(/\d+/g);
+			if (matches.length == 2) {
+				this.dataOffset = Math.floor(matches[0]);
+			}
 		}
+		if (payload.stdOut.match(/ \d+ files, \d+.\d+ clusters/)) {
+			var matches = payload.stdOut.match(/\d+/g);
+			if (matches.length == 3) {
+				var totalSpace = Math.floor(((matches[2]*this.clusterSize)+this.dataOffset)/1048756);
+				// Allow for a 1MB margin of calculation error
+				if ((this.partitionSize[this.targetPartition] - totalSpace) < 1) {
+					totalSpace = this.partitionSize[this.targetPartition];
+				}
+				var freeSpace = Math.floor(((matches[2]-matches[1])*this.clusterSize)/1048756);
+				var usedSpace = totalSpace - freeSpace;
+				// this.filesystemSizeField.innerHTML = totalSpace+" MiB";
+				// this.filesystemUsedField.innerHTML = usedSpace+" MiB";
+				// this.filesystemFreeField.innerHTML = freeSpace+" MiB";
+				this.filesystemSize[this.targetPartition] = totalSpace;
+				this.filesystemUsed[this.targetPartition] = usedSpace;
+				this.filesystemFree[this.targetPartition] = freeSpace;
+			}
+		}
+	}
+	
+	if (payload.stage == "end") {
+
+		this.filesystemCheck[this.targetPartition] = true;
+		this.filesystemRepair[this.targetPartition] = false;
+
+		this.status.innerHTML = "Filesystem Check Passed";
+		this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
+
+		this.updateVolumeList();
+		this.selectTargetPartition(this.targetPartition);
+
+		this.checkFilesystemButton.mojo.deactivate();
+
+		this.targetActivity = "Resize Filesystem";
+		this.selectTargetActivity(this.targetActivity);
+
+		this.overlay.hide();
+	}
+};
+
+MainAssistant.prototype.checkExt3fs = function(payload)
+{
+	if (Mojo.Environment.DeviceInfo.modelNameAscii == 'Emulator') {
+		this.request.cancel();
+		payload = {};
+		payload.returnValue = true;
+		payload.stdOut = " "+(this.partitionSize[this.targetPartition]-1024)*1024/4+" blocks used (100.0%)";
+		// payload.stdOut = " "+(this.partitionSize[this.targetPartition])*1024/4+" blocks used (100.0%)";
 		payload.stage = "end";
 	}
 
@@ -1068,36 +1159,6 @@ MainAssistant.prototype.checkFilesystem = function(payload)
 		this.status.innerHTML = payload.stdOut;
 		if (payload.stdOut.match(/^Pass /)) {
 			this.status.innerHTML = payload.stdOut;
-		}
-		if (payload.stdOut.match(/^\s+\d+ bytes per cluster$/)) {
-			var matches = payload.stdOut.match(/\d+/g);
-			if (matches.length == 1) {
-				this.clusterSize = Math.floor(matches[0]);
-			}
-		}
-		if (payload.stdOut.match(/^Data area starts at byte \d+ .sector \d+.$/)) {
-			var matches = payload.stdOut.match(/\d+/g);
-			if (matches.length == 2) {
-				this.dataOffset = Math.floor(matches[0]);
-			}
-		}
-		if (payload.stdOut.match(/ \d+ files, \d+.\d+ clusters/)) {
-			var matches = payload.stdOut.match(/\d+/g);
-			if (matches.length == 3) {
-				var totalSpace = Math.floor(((matches[2]*this.clusterSize)+this.dataOffset)/1048756);
-				// Allow for a 1MB margin of calculation error
-				if ((this.partitionSize[this.targetPartition] - totalSpace) < 1) {
-					totalSpace = this.partitionSize[this.targetPartition];
-				}
-				var freeSpace = Math.floor(((matches[2]-matches[1])*this.clusterSize)/1048756);
-				var usedSpace = totalSpace - freeSpace;
-				// this.filesystemSizeField.innerHTML = totalSpace+" MiB";
-				// this.filesystemUsedField.innerHTML = usedSpace+" MiB";
-				// this.filesystemFreeField.innerHTML = freeSpace+" MiB";
-				this.filesystemSize[this.targetPartition] = totalSpace;
-				this.filesystemUsed[this.targetPartition] = usedSpace;
-				this.filesystemFree[this.targetPartition] = freeSpace;
-			}
 		}
 		if (payload.stdOut.match(/^\s+\d+ blocks used .[0-9.]+%.$/)) {
 			this.status.innerHTML = payload.stdOut;
@@ -1153,10 +1214,61 @@ MainAssistant.prototype.repairFilesystemTap = function(event)
 
 	this.status.innerHTML = "Repairing "+this.partitionNames[this.targetPartition]+" ...";
 	
-	this.request = TailorService.repairFilesystem(this.repairFilesystemHandler, "/dev/store/"+this.targetPartition);
+	if (this.targetPartition == "media") {
+		this.request = TailorService.repairMedia(this.repairMediaHandler);
+	}
+	else if (this.targetPartition != "unused") {
+		this.request = TailorService.repairExt3fs(this.repairExt3fsHandler, "/dev/store/"+this.targetPartition);
+	}
 }
 
-MainAssistant.prototype.repairFilesystem = function(payload)
+MainAssistant.prototype.repairMedia = function(payload)
+{
+	if (Mojo.Environment.DeviceInfo.modelNameAscii == 'Emulator') {
+		this.request.cancel();
+		payload = {};
+		payload.returnValue = true;
+		payload.stage = "end";
+	}
+
+	if (payload.returnValue === false) {
+		this.status.innerHTML = "Error repairing "+this.partitionNames[this.targetPartition]+" ...";
+		this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
+		// this.errorMessage('<b>Service Error (repairFilesystem):</b><br>'+payload.errorText, [ payload.stdErr ]);
+		this.errorMessage('<b>Filesystem Repair Failed</b>');
+		this.repairFilesystemButton.mojo.deactivate();
+		this.overlay.hide();
+		return;
+	}
+
+	if (payload.stdErr) {
+		this.status.innerHTML = payload.stdErr;
+	}
+	else if (payload.stdOut) {
+		this.status.innerHTML = payload.stdOut;
+	}
+	
+	if (payload.stage == "end") {
+
+		this.filesystemCheck[this.targetPartition] = false;
+		this.filesystemRepair[this.targetPartition] = false;
+
+		this.status.innerHTML = "Filesystem Repair Complete";
+		this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
+
+		this.updateVolumeList();
+		this.selectTargetPartition(this.targetPartition);
+
+		this.repairFilesystemButton.mojo.deactivate();
+
+		this.targetActivity = "Check Filesystem";
+		this.selectTargetActivity(this.targetActivity);
+
+		this.overlay.hide();
+	}
+};
+
+MainAssistant.prototype.repairExt3fs = function(payload)
 {
 	if (Mojo.Environment.DeviceInfo.modelNameAscii == 'Emulator') {
 		this.request.cancel();
