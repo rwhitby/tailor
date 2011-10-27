@@ -50,6 +50,11 @@
 	    "subscribe": true,
 	    "public": true
              }, { 
+            "name": "corruptFilesystem", 
+            "assistant": "CorruptFilesystem",
+	    "subscribe": true,
+	    "public": true
+             }, { 
             "name": "resizeMedia", 
             "assistant": "ResizeMedia",
 	    "subscribe": true,
@@ -62,6 +67,26 @@
              }, { 
             "name": "resizePartition", 
             "assistant": "ResizePartition",
+	    "subscribe": true,
+	    "public": true
+             }, { 
+            "name": "createPartition", 
+            "assistant": "CreatePartition",
+	    "subscribe": true,
+	    "public": true
+             }, { 
+            "name": "deletePartition", 
+            "assistant": "DeletePartition",
+	    "subscribe": true,
+	    "public": true
+             }, { 
+            "name": "createMedia", 
+            "assistant": "CreateMedia",
+	    "subscribe": true,
+	    "public": true
+             }, { 
+            "name": "createExt3fs", 
+            "assistant": "CreateExt3fs",
 	    "subscribe": true,
 	    "public": true
              }, { 
