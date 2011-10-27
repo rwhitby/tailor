@@ -52,6 +52,12 @@ function MainAssistant()
 		disabled: true
 	};
 
+	this.corruptFilesystemButtonModel = {
+		label: $L("Corrupt Filesystem"),
+		buttonClass: 'negative',
+		disabled: true
+	};
+
 	this.newFilesystemSizeModel = { disabled: true };
 
 	this.resizeFilesystemButtonModel = {
@@ -80,20 +86,6 @@ function MainAssistant()
 
 	this.createPartitionButtonModel = {
 		label: $L("Create Partition"),
-		buttonClass: 'negative',
-		disabled: true
-	};
-
-	this.initialFilesystemSizeModel = { disabled: true };
-
-	this.createFilesystemButtonModel = {
-		label: $L("Create Filesystem"),
-		buttonClass: 'negative',
-		disabled: true
-	};
-
-	this.deleteFilesystemButtonModel = {
-		label: $L("Delete Filesystem"),
 		buttonClass: 'negative',
 		disabled: true
 	};
@@ -201,6 +193,10 @@ MainAssistant.prototype.setup = function()
 	this.repairFilesystemTitle =   this.controller.get('repair-filesystem-title');
 	this.repairFilesystemButton =   this.controller.get('repairFilesystemButton');
 
+	this.corruptFilesystemGroup =   this.controller.get('corrupt-filesystem-group');
+	this.corruptFilesystemTitle =   this.controller.get('corrupt-filesystem-title');
+	this.corruptFilesystemButton =   this.controller.get('corruptFilesystemButton');
+
 	this.resizeFilesystemGroup =  this.controller.get('resize-filesystem-group');
 	this.resizeFilesystemTitle =  this.controller.get('resize-filesystem-title');
 	this.newFilesystemSizeField =	this.controller.get('newFilesystemSize');
@@ -220,15 +216,6 @@ MainAssistant.prototype.setup = function()
 	this.initialPartitionName =	this.controller.get('initialPartitionName');
 	this.initialPartitionSizeField =	this.controller.get('initialPartitionSize');
 	this.createPartitionButton =   this.controller.get('createPartitionButton');
-
-	this.createFilesystemGroup =  this.controller.get('create-filesystem-group');
-	this.createFilesystemTitle =  this.controller.get('create-filesystem-title');
-	this.initialFilesystemSizeField =	this.controller.get('initialFilesystemSize');
-	this.createFilesystemButton =  this.controller.get('createFilesystemButton');
-
-	this.deleteFilesystemGroup =  this.controller.get('delete-filesystem-group');
-	this.deleteFilesystemTitle =  this.controller.get('delete-filesystem-title');
-	this.deleteFilesystemButton =  this.controller.get('deleteFilesystemButton');
 
 	this.deletePartitionGroup =   this.controller.get('delete-partition-group');
 	this.deletePartitionTitle =   this.controller.get('delete-partition-title');
@@ -256,6 +243,8 @@ MainAssistant.prototype.setup = function()
 	this.repairFilesystemTapHandler = this.repairFilesystemTap.bindAsEventListener(this);
 	this.repairMediaHandler = this.repairMedia.bindAsEventListener(this);
 	this.repairExt3fsHandler = this.repairExt3fs.bindAsEventListener(this);
+	this.corruptFilesystemTapHandler = this.corruptFilesystemTap.bindAsEventListener(this);
+	this.corruptFilesystemHandler = this.corruptFilesystem.bindAsEventListener(this);
 	this.newFilesystemSizeChangedHandler =  this.newFilesystemSizeChanged.bindAsEventListener(this);
 	this.resizeFilesystemTapHandler = this.resizeFilesystemTap.bindAsEventListener(this);
 	this.resizeMediaHandler = this.resizeMedia.bindAsEventListener(this);
@@ -267,10 +256,10 @@ MainAssistant.prototype.setup = function()
 	this.mountPartitionHandler = this.mountPartition.bindAsEventListener(this);
 	this.initialPartitionSizeChangedHandler =  this.initialPartitionSizeChanged.bindAsEventListener(this);
 	this.createPartitionTapHandler = this.createPartitionTap.bindAsEventListener(this);
-	this.initialFilesystemSizeChangedHandler =  this.initialFilesystemSizeChanged.bindAsEventListener(this);
-	this.createFilesystemTapHandler = this.createFilesystemTap.bindAsEventListener(this);
-	this.deleteFilesystemTapHandler = this.deleteFilesystemTap.bindAsEventListener(this);
+	this.createPartitionHandler = this.createPartition.bindAsEventListener(this);
+	this.createFilesystemHandler = this.createFilesystem.bindAsEventListener(this);
 	this.deletePartitionTapHandler = this.deletePartitionTap.bindAsEventListener(this);
+	this.deletePartitionHandler = this.deletePartition.bindAsEventListener(this);
 	this.listMountsHandler = this.listMounts.bindAsEventListener(this);
 	this.mountTappedHandler = this.mountTapped.bindAsEventListener(this);
 	this.unmountedHandler = this.unmounted.bindAsEventListener(this);
@@ -292,6 +281,8 @@ MainAssistant.prototype.setup = function()
 	this.controller.listen(this.checkFilesystemButton, Mojo.Event.tap, this.checkFilesystemTapHandler);
 	this.controller.setupWidget('repairFilesystemButton', { type: Mojo.Widget.activityButton }, this.repairFilesystemButtonModel);
 	this.controller.listen(this.repairFilesystemButton, Mojo.Event.tap, this.repairFilesystemTapHandler);
+	this.controller.setupWidget('corruptFilesystemButton', { type: Mojo.Widget.activityButton }, this.corruptFilesystemButtonModel);
+	this.controller.listen(this.corruptFilesystemButton, Mojo.Event.tap, this.corruptFilesystemTapHandler);
 
 	this.controller.setupWidget('newFilesystemSize', {
 			autoFocus: false,
@@ -352,28 +343,6 @@ MainAssistant.prototype.setup = function()
 	this.controller.setupWidget('createPartitionButton', { type: Mojo.Widget.activityButton }, this.createPartitionButtonModel);
 	this.controller.listen(this.createPartitionButton, Mojo.Event.tap, this.createPartitionTapHandler);
 
-	this.controller.setupWidget('initialFilesystemSize', {
-			autoFocus: false,
-				autoReplace: false,
-				// hintText: 'Enter initial filesystem size ...',
-				// multiline: false,
-				enterSubmits: false,
-				changeOnKeyPress: true,
-				// maxLength: 6,
-				preventResize: true,
-				textCase: Mojo.Widget.steModeLowerCase,
-				focusMode: Mojo.Widget.focusSelectMode,
-				// modifierState: Mojo.Widget.numLock,
-				charsAllow: this.onlyNumbers.bind(this)
-				},
-		this.initialFilesystemSizeModel);
-	this.controller.listen(this.initialFilesystemSizeField, Mojo.Event.propertyChange, this.initialFilesystemSizeChangedHandler);
-	this.controller.setupWidget('createFilesystemButton', { type: Mojo.Widget.activityButton }, this.createFilesystemButtonModel);
-	this.controller.listen(this.createFilesystemButton, Mojo.Event.tap, this.createFilesystemTapHandler);
-
-	this.controller.setupWidget('deleteFilesystemButton', { type: Mojo.Widget.activityButton }, this.deleteFilesystemButtonModel);
-	this.controller.listen(this.deleteFilesystemButton, Mojo.Event.tap, this.deleteFilesystemTapHandler);
-
 	this.controller.setupWidget('deletePartitionButton', { type: Mojo.Widget.activityButton }, this.deletePartitionButtonModel);
 	this.controller.listen(this.deletePartitionButton, Mojo.Event.tap, this.deletePartitionTapHandler);
 
@@ -388,7 +357,7 @@ MainAssistant.prototype.setup = function()
 MainAssistant.prototype.activate = function()
 {
 	this.timer = this.controller.window.setInterval(this.heartbeatTick.bind(this), 1000);
-	this.refresh();
+	this.refresh(true);
 };
 
 MainAssistant.prototype.deactivate = function()
@@ -412,50 +381,16 @@ MainAssistant.prototype.heartbeatTock = function()
 	this.heartbeatElement.innerHTML = this.heartbeatValue;
 };	
 
-MainAssistant.prototype.refresh = function()
+MainAssistant.prototype.refresh = function(clearFilesystems)
 {
 	this.overlay.show();
+
 	this.partitionSize = {
 		"media":"0",
 		"ext3fs":"0",
 		"cm-system":"0",
 		"cm-cache":"0",
 		"cm-data":"0",
-	};
-	this.filesystemCheck = {
-		"media":false,
-		"ext3fs":false,
-		"cm-system":false,
-		"cm-cache":false,
-		"cm-data":false,
-	};
-	this.filesystemRepair = {
-		"media":false,
-		"ext3fs":false,
-		"cm-system":false,
-		"cm-cache":false,
-		"cm-data":false,
-	};
-	this.filesystemSize = {
-		"media":false,
-		"ext3fs":false,
-		"cm-system":false,
-		"cm-cache":false,
-		"cm-data":false,
-	};
-	this.filesystemUsed = {
-		"media":false,
-		"ext3fs":false,
-		"cm-system":false,
-		"cm-cache":false,
-		"cm-data":false,
-	};
-	this.filesystemFree = {
-		"media":false,
-		"ext3fs":false,
-		"cm-system":false,
-		"cm-cache":false,
-		"cm-data":false,
 	};
 	this.partitionMounts = {
 		"media":[],
@@ -469,6 +404,45 @@ MainAssistant.prototype.refresh = function()
 		"/media/ext3fs": false,
 		"/opt": false
 	};
+
+	if (clearFilesystems) {
+		this.filesystemCheck = {
+			"media":false,
+			"ext3fs":false,
+			"cm-system":false,
+			"cm-cache":false,
+			"cm-data":false,
+		};
+		this.filesystemRepair = {
+			"media":false,
+			"ext3fs":false,
+			"cm-system":false,
+			"cm-cache":false,
+			"cm-data":false,
+		};
+		this.filesystemSize = {
+			"media":false,
+			"ext3fs":false,
+			"cm-system":false,
+			"cm-cache":false,
+			"cm-data":false,
+		};
+		this.filesystemUsed = {
+			"media":false,
+			"ext3fs":false,
+			"cm-system":false,
+			"cm-cache":false,
+			"cm-data":false,
+		};
+		this.filesystemFree = {
+			"media":false,
+			"ext3fs":false,
+			"cm-system":false,
+			"cm-cache":false,
+			"cm-data":false,
+		};
+	}
+
 	this.volumesModel.items = [];
 	this.partitionSizeField.innerHTML =	"Unknown";
 	this.filesystemSizeField.innerHTML = "Unknown";
@@ -643,25 +617,28 @@ MainAssistant.prototype.updateActivityList = function()
 		}
 		else {
 			if (this.filesystemRepair[this.targetPartition]) {
+				this.targetActivityModel.choices.push({'label':"Check Filesystem", 'value':"Check Filesystem"});
 				this.targetActivityModel.choices.push({'label':"Repair Filesystem", 'value':"Repair Filesystem"});
+				this.targetActivityModel.choices.push({'label':"Delete Partition", 'value':"Delete Partition"});
 			}
 			else if (!this.filesystemCheck[this.targetPartition]) {
+				this.targetActivityModel.choices.push({'label':"Mount Partition", 'value':"Mount Partition"});
 				this.targetActivityModel.choices.push({'label':"Check Filesystem", 'value':"Check Filesystem"});
+				this.targetActivityModel.choices.push({'label':"Corrupt Filesystem", 'value':"Corrupt Filesystem"});
+				this.targetActivityModel.choices.push({'label':"Delete Partition", 'value':"Delete Partition"});
 			}
 			else {
-				if (this.filesystemSize[this.targetPartition] != 0) {
+				if (this.filesystemSize[this.targetPartition] == 0) {
+					this.targetActivityModel.choices.push({'label':"Create Filesystem", 'value':"Create Filesystem"});
+				}
+				else {
 					this.targetActivityModel.choices.push({'label':"Mount Partition", 'value':"Mount Partition"});
 					this.targetActivityModel.choices.push({'label':"Check Filesystem", 'value':"Check Filesystem"});
+					this.targetActivityModel.choices.push({'label':"Corrupt Filesystem", 'value':"Corrupt Filesystem"});
 					this.targetActivityModel.choices.push({'label':"Resize Filesystem", 'value':"Resize Filesystem"});
 				}
 				this.targetActivityModel.choices.push({'label':"Resize Partition", 'value':"Resize Partition"});
-				if (this.filesystemSize[this.targetPartition] == 0) {
-					this.targetActivityModel.choices.push({'label':"Create Filesystem", 'value':"Create Filesystem"});
-					this.targetActivityModel.choices.push({'label':"Delete Partition", 'value':"Delete Partition"});
-				}
-				else {
-					this.targetActivityModel.choices.push({'label':"Delete Filesystem", 'value':"Delete Filesystem"});
-				}
+				this.targetActivityModel.choices.push({'label':"Delete Partition", 'value':"Delete Partition"});
 			}
 		}
 	}
@@ -804,7 +781,12 @@ MainAssistant.prototype.selectTargetPartition = function(name)
 				this.targetActivity = "Repair Filesystem";
 			}
 			else if (this.filesystemCheck[this.targetPartition]) {
-				this.targetActivity = "Mount Partition";
+				if (this.filesystemSize[this.targetPartition] == 0) {
+					this.targetActivity = "Create Filesystem";
+				}
+				else {
+					this.targetActivity = "Mount Partition";
+				}
 			}
 			else {
 				this.targetActivity = "Check Filesystem";
@@ -845,6 +827,10 @@ MainAssistant.prototype.targetActivityChanged = function(event)
 	this.repairFilesystemButtonModel.disabled = true;
 	this.controller.modelChanged(this.repairFilesystemButtonModel);
 
+	this.corruptFilesystemGroup.style.display = 'none';
+	this.corruptFilesystemButtonModel.disabled = true;
+	this.controller.modelChanged(this.corruptFilesystemButtonModel);
+
 	this.resizeFilesystemGroup.style.display = 'none';
 	this.newFilesystemSizeModel.disabled = true;
 	this.controller.modelChanged(this.newFilesystemSizeModel);
@@ -869,16 +855,6 @@ MainAssistant.prototype.targetActivityChanged = function(event)
 	this.createPartitionButtonModel.disabled = true;
 	this.controller.modelChanged(this.createPartitionButtonModel);
 
-	this.createFilesystemGroup.style.display = 'none';
-	this.initialFilesystemSizeModel.disabled = true;
-	this.controller.modelChanged(this.initialFilesystemSizeModel);
-	this.createFilesystemButtonModel.disabled = true;
-	this.controller.modelChanged(this.createFilesystemButtonModel);
-
-	this.deleteFilesystemGroup.style.display = 'none';
-	this.deleteFilesystemButtonModel.disabled = true;
-	this.controller.modelChanged(this.deleteFilesystemButtonModel);
-
 	this.deletePartitionGroup.style.display = 'none';
 	this.deletePartitionButtonModel.disabled = true;
 	this.controller.modelChanged(this.deletePartitionButtonModel);
@@ -900,6 +876,12 @@ MainAssistant.prototype.targetActivityChanged = function(event)
 		this.repairFilesystemTitle.innerHTML = $L("Repair")+" "+this.partitionNames[this.targetPartition]+" "+$L("Filesystem");
 		this.repairFilesystemButtonModel.disabled = false;
 		this.controller.modelChanged(this.repairFilesystemButtonModel);
+	}
+	else if (this.targetActivity == "Corrupt Filesystem") {
+		this.corruptFilesystemGroup.style.display = '';
+		this.corruptFilesystemTitle.innerHTML = $L("Corrupt")+" "+this.partitionNames[this.targetPartition]+" "+$L("Filesystem");
+		this.corruptFilesystemButtonModel.disabled = false;
+		this.controller.modelChanged(this.corruptFilesystemButtonModel);
 	}
 	else if (this.targetActivity == "Resize Filesystem") {
 		this.resizeFilesystemGroup.style.display = '';
@@ -945,21 +927,6 @@ MainAssistant.prototype.targetActivityChanged = function(event)
 		this.initialPartitionSizeChanged({value: this.initialPartitionSizeModel.value});
 		this.initialPartitionSizeField.mojo.focus();
 	}
-	else if (this.targetActivity == "Create Filesystem") {
-		this.createFilesystemGroup.style.display = '';
-		this.createFilesystemTitle.innerHTML = $L("Create")+" "+this.partitionNames[this.targetPartition]+" "+$L("Filesystem");
-		this.initialFilesystemSizeModel.disabled = false;
-		this.initialFilesystemSizeModel.value = this.partitionSize[this.targetPartition];
-		this.controller.modelChanged(this.initialFilesystemSizeModel);
-		this.initialFilesystemSizeChanged({value: this.initialFilesystemSizeModel.value});
-		this.initialFilesystemSizeField.mojo.focus();
-	}
-	else if (this.targetActivity == "Delete Filesystem") {
-		this.deleteFilesystemGroup.style.display = '';
-		this.deleteFilesystemTitle.innerHTML = $L("Delete")+" "+this.partitionNames[this.targetPartition]+" "+$L("Filesystem");
-		this.deleteFilesystemButtonModel.disabled = false;
-		this.controller.modelChanged(this.deleteFilesystemButtonModel);
-	}
 	else if (this.targetActivity == "Delete Partition") {
 		this.deletePartitionGroup.style.display = '';
 		this.deletePartitionTitle.innerHTML = $L("Delete")+" "+this.partitionNames[this.targetPartition]+" "+$L("Partition");
@@ -981,7 +948,7 @@ MainAssistant.prototype.unmountPartitionTap = function(event)
 		if (Mojo.Environment.DeviceInfo.modelNameAscii == 'Emulator') {
 			this.emulatorMountState["media"] = false;
 			this.unmountPartitionButton.mojo.deactivate();
-			this.refresh();
+			this.refresh(true);
 		}
 		else {
 			this.request = TailorService.unmountMedia(this.unmountPartitionHandler);
@@ -991,7 +958,7 @@ MainAssistant.prototype.unmountPartitionTap = function(event)
 		if (Mojo.Environment.DeviceInfo.modelNameAscii == 'Emulator') {
 			this.emulatorMountState["ext3fs"] = false;
 			this.unmountPartitionButton.mojo.deactivate();
-			this.refresh();
+			this.refresh(true);
 		}
 		else {
 			this.request = TailorService.unmountExt3fs(this.unmountPartitionHandler);
@@ -1014,7 +981,7 @@ MainAssistant.prototype.unmountPartition = function(payload)
 	}
 
 	this.unmountPartitionButton.mojo.deactivate();
-	this.refresh();
+	this.refresh(true);
 };
 
 MainAssistant.prototype.checkFilesystemTap = function(event)
@@ -1132,21 +1099,29 @@ MainAssistant.prototype.checkExt3fs = function(payload)
 
 	if (payload.returnValue === false) {
 
-		this.filesystemCheck[this.targetPartition] = false;
-		this.filesystemRepair[this.targetPartition] = true;
-
-		this.status.innerHTML = "Error checking "+this.partitionNames[this.targetPartition]+" ...";
-		this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
-
-		this.errorMessage('<b>Filesystem Check Failed</b><br>This is a potentially destructive situation for your data. You must either attempt to repair your filesystem or reboot and hope that webOS repairs it for you.');
+		if (payload.errorText.match(/Bad magic number in super-block/)) {
+			this.status.innerHTML = "No filesystem found in "+this.partitionNames[this.targetPartition];
+			this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
+			this.filesystemCheck[this.targetPartition] = true;
+			this.filesystemSize[this.targetPartition] = 0;
+			this.filesystemUsed[this.targetPartition] = 0;
+			this.filesystemFree[this.targetPartition] = 0;
+		}
+		else {
+			this.status.innerHTML = "Error checking "+this.partitionNames[this.targetPartition]+" ...";
+			this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
+			this.errorMessage('<b>Filesystem Check Failed</b><br>This is a potentially destructive situation for your data. You must either attempt to repair your filesystem or reboot and hope that webOS repairs it for you.');
+			this.filesystemCheck[this.targetPartition] = true;
+			this.filesystemRepair[this.targetPartition] = true;
+			this.filesystemSize[this.targetPartition] = false;
+			this.filesystemUsed[this.targetPartition] = false;
+			this.filesystemFree[this.targetPartition] = false;
+		}
 
 		this.updateVolumeList();
 		this.selectTargetPartition(this.targetPartition);
 
 		this.checkFilesystemButton.mojo.deactivate();
-
-		this.targetActivity = "Repair Filesystem";
-		this.selectTargetActivity(this.targetActivity);
 
 		this.overlay.hide();
 		return;
@@ -1209,6 +1184,8 @@ MainAssistant.prototype.repairFilesystemTap = function(event)
 
 	this.status.innerHTML = "Repairing "+this.partitionNames[this.targetPartition]+" ...";
 	
+	this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
+
 	if (this.targetPartition == "media") {
 		this.request = TailorService.repairMedia(this.repairMediaHandler);
 	}
@@ -1230,7 +1207,7 @@ MainAssistant.prototype.repairMedia = function(payload)
 		this.status.innerHTML = "Error repairing "+this.partitionNames[this.targetPartition]+" ...";
 		this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
 		// this.errorMessage('<b>Service Error (repairFilesystem):</b><br>'+payload.errorText, [ payload.stdErr ]);
-		this.errorMessage('<b>Filesystem Repair Failed</b>');
+		this.errorMessage('<b>Filesystem Repair Failed</b><br>Note that it usually takes two attempts to repair a filesystem, so try again if this was the first attempt.');
 		this.repairFilesystemButton.mojo.deactivate();
 		this.overlay.hide();
 		return;
@@ -1276,7 +1253,7 @@ MainAssistant.prototype.repairExt3fs = function(payload)
 		this.status.innerHTML = "Error repairing "+this.partitionNames[this.targetPartition]+" ...";
 		this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
 		// this.errorMessage('<b>Service Error (repairFilesystem):</b><br>'+payload.errorText, [ payload.stdErr ]);
-		this.errorMessage('<b>Filesystem Repair Failed</b>');
+		this.errorMessage('<b>Filesystem Repair Failed</b><br>Note that it usually takes two attempts to repair a filesystem, so try again if this was the first attempt.');
 		this.repairFilesystemButton.mojo.deactivate();
 		this.overlay.hide();
 		return;
@@ -1303,6 +1280,64 @@ MainAssistant.prototype.repairExt3fs = function(payload)
 		this.repairFilesystemButton.mojo.deactivate();
 
 		this.targetActivity = "Check Filesystem";
+		this.selectTargetActivity(this.targetActivity);
+
+		this.overlay.hide();
+	}
+};
+
+MainAssistant.prototype.corruptFilesystemTap = function(event)
+{
+	this.overlay.show();
+
+	this.status.innerHTML = "Corrupting "+this.partitionNames[this.targetPartition]+" ...";
+	
+	this.request = TailorService.corruptFilesystem(this.corruptFilesystemHandler, "/dev/store/"+this.targetPartition);
+}
+
+MainAssistant.prototype.corruptFilesystem = function(payload)
+{
+	if (Mojo.Environment.DeviceInfo.modelNameAscii == 'Emulator') {
+		this.request.cancel();
+		payload = {};
+		payload.returnValue = true;
+		payload.stage = "end";
+	}
+
+	if (payload.returnValue === false) {
+		this.status.innerHTML = "Error corrupting "+this.partitionNames[this.targetPartition]+" ...";
+		this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
+		// this.errorMessage('<b>Service Error (corruptFilesystem):</b><br>'+payload.errorText, [ payload.stdErr ]);
+		this.errorMessage('<b>Filesystem Corruption Failed</b>');
+		this.corruptFilesystemButton.mojo.deactivate();
+		this.overlay.hide();
+		return;
+	}
+
+	if (payload.stdErr) {
+		this.status.innerHTML = payload.stdErr;
+	}
+	else if (payload.stdOut) {
+		this.status.innerHTML = payload.stdOut;
+	}
+	
+	if (payload.stage == "end") {
+
+		this.filesystemCheck[this.targetPartition] = true;
+		this.filesystemRepair[this.targetPartition] = true;
+		this.filesystemSize[this.targetPartition] = false;
+		this.filesystemUsed[this.targetPartition] = false;
+		this.filesystemFree[this.targetPartition] = false;
+
+		this.status.innerHTML = "Filesystem Corruption Complete";
+		this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
+
+		this.updateVolumeList();
+		this.selectTargetPartition(this.targetPartition);
+
+		this.corruptFilesystemButton.mojo.deactivate();
+
+		this.targetActivity = "Repair Filesystem";
 		this.selectTargetActivity(this.targetActivity);
 
 		this.overlay.hide();
@@ -1549,8 +1584,7 @@ MainAssistant.prototype.resizePartition = function(payload)
 		this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
 
 		this.resizePartitionButton.mojo.deactivate();
-		
-		this.refresh();
+		this.refresh(true);
 	}
 };
 
@@ -1565,7 +1599,7 @@ MainAssistant.prototype.mountPartitionTap = function(event)
 		if (Mojo.Environment.DeviceInfo.modelNameAscii == 'Emulator') {
 			this.emulatorMountState["media"] = true;
 			this.mountPartitionButton.mojo.deactivate();
-			this.refresh();
+			this.refresh(true);
 		}
 		else {
 			this.request = TailorService.mountMedia(this.mountPartitionHandler);
@@ -1575,7 +1609,7 @@ MainAssistant.prototype.mountPartitionTap = function(event)
 		if (Mojo.Environment.DeviceInfo.modelNameAscii == 'Emulator') {
 			this.emulatorMountState["ext3fs"] = true;
 			this.mountPartitionButton.mojo.deactivate();
-			this.refresh();
+			this.refresh(true);
 		}
 		else {
 			this.request = TailorService.mountExt3fs(this.mountPartitionHandler);
@@ -1611,7 +1645,7 @@ MainAssistant.prototype.mountPartition = function(payload)
 	this.filesystemFree[this.targetPartition] = false;
 
 	this.mountPartitionButton.mojo.deactivate();
-	this.refresh();
+	this.refresh(true);
 };
 
 MainAssistant.prototype.initialPartitionSizeChanged = function(event)
@@ -1650,110 +1684,97 @@ MainAssistant.prototype.createPartitionTap = function(event)
 	
 	this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
 
-	// %%% Do stuff %%%
-
-	this.freeSpace -= value;
-	this.partitionSize[name] = value;
 	this.targetPartition = name;
 
-	this.status.innerHTML = "Partition Created";
-	this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
-
-	this.updateVolumeList();
-	this.selectTargetPartition(this.targetPartition);
-
-	this.createPartitionButton.mojo.deactivate();
-
-	this.targetActivity = "Create Filesystem";
-	this.selectTargetActivity(this.targetActivity);
-
-	this.overlay.hide();
+	this.request = TailorService.createPartition(this.createPartitionHandler, name, value);
 };
 
-MainAssistant.prototype.initialFilesystemSizeChanged = function(event)
+MainAssistant.prototype.createPartition = function(payload)
 {
-	this.createValue = event.value || 0;
-
-	// New size request larger than partition size plus free space
-	if ((this.createValue - this.partitionSize[this.targetPartition]) > 0) {
-		this.createFilesystemButtonModel.label = $L("New Size Too Large");
-		this.createFilesystemButtonModel.disabled = true;
-	}
-	// New size request not specified
-	else if (this.createValue == 0) {
-		this.createFilesystemButtonModel.label = $L("Enter New Size");
-		this.createFilesystemButtonModel.disabled = true;
-	}
-	else {
-		this.createFilesystemButtonModel.label = $L("Create Filesystem");
-		this.createFilesystemButtonModel.disabled = false;
+	if (Mojo.Environment.DeviceInfo.modelNameAscii == 'Emulator') {
+		this.request.cancel();
+		payload = {};
+		payload.returnValue = true;
+		payload.stage = "end";
 	}
 
-	this.controller.modelChanged(this.createFilesystemButtonModel);
-};
+	if (payload.returnValue === false) {
+		this.status.innerHTML = "Error creating "+this.partitionNames[this.targetPartition]+" ...";
+		this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
+		// this.errorMessage('<b>Service Error (createPartition):</b><br>'+payload.errorText, [ payload.stdErr ]);
+		this.errorMessage('<b>Partition Creation Failed</b>');
+		this.createPartitionButton.mojo.deactivate();
+		this.overlay.hide();
+		return;
+	}
 
-MainAssistant.prototype.createFilesystemTap = function(event)
-{
-	this.overlay.show();
-
-	this.initialFilesystemSizeField.mojo.blur();
-
-	var value = this.initialFilesystemSizeModel.value;
-
-	this.status.innerHTML = "Creating " + this.targetPartition + " with size " + value + " MiB";
+	if (payload.stdErr) {
+		if (!payload.stdErr.match(/leaked on lvcreate invocation/)) {
+			this.status.innerHTML = payload.stdErr;
+		}
+	}
+	else if (payload.stdOut) {
+		this.status.innerHTML = payload.stdOut;
+	}
 	
-	this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
+	if (payload.stage == "end") {
 
-	// %%% Do stuff %%%
+		this.status.innerHTML = "Partition Created";
+		this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
 
-	this.filesystemCheck[this.targetPartition] = false;
-	this.filesystemRepair[this.targetPartition] = false;
-	this.filesystemSize[this.targetPartition] = value;
-	this.filesystemUsed[this.targetPartition] = 0;
-	this.filesystemFree[this.targetPartition] = value;
+		this.createPartitionButton.mojo.deactivate();
+		
+		this.filesystemCheck[this.targetPartition] = true;
+		this.filesystemSize[this.targetPartition] = 0;
 
-	this.status.innerHTML = "Filesystem Created";
-	this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
-
-	this.updateVolumeList();
-	this.selectTargetPartition(this.targetPartition);
-
-	this.createFilesystemButton.mojo.deactivate();
-
-	this.targetActivity = "Check Filesystem";
-	this.selectTargetActivity(this.targetActivity);
-	this.checkFilesystemButton.mojo.activate();
-	this.checkFilesystemTap();
+		if (this.targetPartition == "media") {
+			this.request = TailorService.createMedia(this.createFilesystemHandler);
+		}
+		else if (this.targetPartition != "unused") {
+			this.request = TailorService.createExt3fs(this.createFilesystemHandler, "/dev/store/"+this.targetPartition);
+		}
+	}
 };
 
-MainAssistant.prototype.deleteFilesystemTap = function(event)
+MainAssistant.prototype.createFilesystem = function(payload)
 {
-	this.overlay.show();
+	if (Mojo.Environment.DeviceInfo.modelNameAscii == 'Emulator') {
+		this.request.cancel();
+		payload = {};
+		payload.returnValue = true;
+		payload.stage = "end";
+	}
 
-	this.status.innerHTML = "Deleting "+this.targetPartition;
+	if (payload.returnValue === false) {
+		this.status.innerHTML = "Error creating "+this.partitionNames[this.targetPartition]+" ...";
+		this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
+		// this.errorMessage('<b>Service Error (createFilesystem):</b><br>'+payload.errorText, [ payload.stdErr ]);
+		this.errorMessage('<b>Filesystem Creation Failed</b>');
+		this.createPartitionButton.mojo.deactivate();
+		this.overlay.hide();
+		return;
+	}
+
+	if (payload.stdErr) {
+		this.status.innerHTML = payload.stdErr;
+	}
+	else if (payload.stdOut) {
+		this.status.innerHTML = payload.stdOut;
+	}
 	
-	this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
+	if (payload.stage == "end") {
 
-	// %%% Do stuff %%%
+		this.status.innerHTML = "Filesystem Creation Complete";
+		this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
 
-	this.filesystemCheck[this.targetPartition] = true;
-	this.filesystemRepair[this.targetPartition] = false;
-	this.filesystemSize[this.targetPartition] = 0;
-	this.filesystemUsed[this.targetPartition] = 0;
-	this.filesystemFree[this.targetPartition] = 0;
+		this.filesystemCheck[this.targetPartition] = false;
+		this.filesystemSize[this.targetPartition] = false;
+		this.filesystemUsed[this.targetPartition] = false;
+		this.filesystemFree[this.targetPartition] = false;
 
-	this.status.innerHTML = "Filesystem Deleted";
-	this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
-
-	this.updateVolumeList();
-	this.selectTargetPartition(this.targetPartition);
-
-	this.deleteFilesystemButton.mojo.deactivate();
-
-	this.targetActivity = "Delete Partition";
-	this.selectTargetActivity(this.targetActivity);
-
-	this.overlay.hide();
+		this.createPartitionButton.mojo.deactivate();
+		this.refresh(true);
+	}
 };
 
 MainAssistant.prototype.deletePartitionTap = function(event)
@@ -1764,24 +1785,48 @@ MainAssistant.prototype.deletePartitionTap = function(event)
 
 	this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
 
-	// %%% Do stuff %%%
+	this.request = TailorService.deletePartition(this.deletePartitionHandler,
+												 "/dev/store/"+this.targetPartition);
+};
 
-	this.freeSpace += this.partitionSize[this.targetPartition];
-	this.partitionSize[this.targetPartition] = 0;
-	this.targetPartition = "unused";
+MainAssistant.prototype.deletePartition = function(payload)
+{
+	if (Mojo.Environment.DeviceInfo.modelNameAscii == 'Emulator') {
+		this.request.cancel();
+		payload = {};
+		payload.returnValue = true;
+		payload.stage = "end";
+	}
 
-	this.status.innerHTML = "Partition Deleted";
-	this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
+	if (payload.returnValue === false) {
+		this.status.innerHTML = "Error deleting "+this.partitionNames[this.targetPartition]+" ...";
+		this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
+		// this.errorMessage('<b>Service Error (deletePartition):</b><br>'+payload.errorText, [ payload.stdErr ]);
+		this.errorMessage('<b>Partition Deletion Failed</b>');
+		this.deletePartitionButton.mojo.deactivate();
+		this.overlay.hide();
+		return;
+	}
 
-	this.updateVolumeList();
-	this.selectTargetPartition(this.targetPartition);
+	if (payload.stdErr) {
+		if (!payload.stdErr.match(/leaked on lvremove invocation/)) {
+			this.status.innerHTML = payload.stdErr;
+		}
+	}
+	else if (payload.stdOut) {
+		this.status.innerHTML = payload.stdOut;
+	}
+	
+	if (payload.stage == "end") {
 
-	this.deletePartitionButton.mojo.deactivate();
+		this.status.innerHTML = "Partition Deleted";
+		this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
 
-	this.targetActivity = "Create Partition";
-	this.selectTargetActivity(this.targetActivity);
+		this.targetPartition = "unused";
 
-	this.overlay.hide();
+		this.deletePartitionButton.mojo.deactivate();
+		this.refresh(true);
+	}
 };
 
 MainAssistant.prototype.mountTapped = function(event)
@@ -1809,7 +1854,7 @@ MainAssistant.prototype.unmounted = function(payload)
 		this.errorMessage('<b>Service Error (unmount):</b><br>'+payload.errorText, payload.stdErr);
 	}
 
-	this.refresh();
+	this.refresh(true);
 };
 
 MainAssistant.prototype.getRandomSubTitle = function()
@@ -1881,7 +1926,7 @@ MainAssistant.prototype.handleCommand = function(event)
 	if (event.type == Mojo.Event.command) {
 		switch (event.command) {
 		case 'do-refresh':
-		this.refresh();
+		this.refresh(true);
 		break;
 		
 		case 'do-prefs':
@@ -1902,6 +1947,7 @@ MainAssistant.prototype.cleanup = function(event)
 	this.controller.stopListening(this.unmountPartitionButton, Mojo.Event.tap, this.unmountPartitionTapHandler);
 	this.controller.stopListening(this.checkFilesystemButton,  Mojo.Event.tap, this.checkFilesystemTapHandler);
 	this.controller.stopListening(this.repairFilesystemButton,  Mojo.Event.tap, this.repairFilesystemTapHandler);
+	this.controller.stopListening(this.corruptFilesystemButton,  Mojo.Event.tap, this.corruptFilesystemTapHandler);
 	this.controller.stopListening(this.newFilesystemSizeField, Mojo.Event.propertyChange, this.newFilesystemSizeChangedHandler);
 	this.controller.stopListening(this.resizeFilesystemButton,  Mojo.Event.tap, this.resizeFilesystemTapHandler);
 	this.controller.stopListening(this.newPartitionSizeField, Mojo.Event.propertyChange, this.newPartitionSizeChangedHandler);
@@ -1909,7 +1955,6 @@ MainAssistant.prototype.cleanup = function(event)
 	this.controller.stopListening(this.mountPartitionButton, Mojo.Event.tap, this.mountPartitionTapHandler);
 	this.controller.stopListening(this.initialPartitionSizeField, Mojo.Event.propertyChange, this.initialPartitionSizeChangedHandler);
 	this.controller.stopListening(this.createPartitionButton,  Mojo.Event.tap, this.createPartitionTapHandler);
-	this.controller.stopListening(this.initialFilesystemSizeField, Mojo.Event.propertyChange, this.initialFilesystemSizeChangedHandler);
 	this.controller.stopListening(this.createFilesystemButton,  Mojo.Event.tap, this.createFilesystemTapHandler);
 	this.controller.stopListening(this.mountList, Mojo.Event.listTap, this.mountTappedHandler);
 };

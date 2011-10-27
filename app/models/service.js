@@ -119,6 +119,21 @@ TailorService.repairExt3fs = function(callback, filesystem)
     return request;
 };
 
+TailorService.corruptFilesystem = function(callback, filesystem)
+{
+    var request = new Mojo.Service.Request(TailorService.identifier,
+	{
+	    method: 'corruptFilesystem',
+		parameters: {
+			"filesystem": filesystem,
+			"subscribe": true
+		},
+	    onSuccess: callback,
+	    onFailure: callback
+	});
+    return request;
+};
+
 TailorService.resizeMedia = function(callback, size)
 {
     var request = new Mojo.Service.Request(TailorService.identifier,
@@ -161,6 +176,68 @@ TailorService.resizePartition = function(callback, filesystem, size)
 		{
 			"filesystem": filesystem,
 			"size": size,
+			"subscribe": true
+		},
+	    onSuccess: callback,
+	    onFailure: callback
+	});
+    return request;
+};
+
+TailorService.createPartition = function(callback, partition, size)
+{
+    var request = new Mojo.Service.Request(TailorService.identifier,
+	{
+	    method: 'createPartition',
+		parameters:
+		{
+			"partition": partition,
+			"size": size,
+			"subscribe": true
+		},
+	    onSuccess: callback,
+	    onFailure: callback
+	});
+    return request;
+};
+
+TailorService.deletePartition = function(callback, filesystem, size)
+{
+    var request = new Mojo.Service.Request(TailorService.identifier,
+	{
+	    method: 'deletePartition',
+		parameters:
+		{
+			"filesystem": filesystem,
+			"subscribe": true
+		},
+	    onSuccess: callback,
+	    onFailure: callback
+	});
+    return request;
+};
+
+TailorService.createMedia = function(callback)
+{
+    var request = new Mojo.Service.Request(TailorService.identifier,
+	{
+	    method: 'createMedia',
+		parameters: {
+			"subscribe": true
+		},
+	    onSuccess: callback,
+	    onFailure: callback
+	});
+    return request;
+};
+
+TailorService.createExt3fs = function(callback, filesystem)
+{
+    var request = new Mojo.Service.Request(TailorService.identifier,
+	{
+	    method: 'createExt3fs',
+		parameters: {
+			"filesystem": filesystem,
 			"subscribe": true
 		},
 	    onSuccess: callback,
