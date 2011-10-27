@@ -908,7 +908,6 @@ MainAssistant.prototype.targetActivityChanged = function(event)
 		this.controller.modelChanged(this.mountPartitionButtonModel);
 	}
 	else if (this.targetActivity == "Create Partition") {
-		this.createPartitionGroup.style.display = '';
 		this.initialPartitionNameModel.choices = [];
 		for (var i = 0; i < this.partitions.length; i++) {
 			var name = this.partitions[i];
@@ -917,15 +916,21 @@ MainAssistant.prototype.targetActivityChanged = function(event)
 			}
 		}
 		if (this.initialPartitionNameModel.choices.length > 0) {
+			this.createPartitionGroup.style.display = '';
 			this.initialPartitionNameModel.disabled = false;
 			this.initialPartitionNameModel.value = this.initialPartitionNameModel.choices[0].value;
+			this.controller.modelChanged(this.initialPartitionNameModel);
+			this.initialPartitionSizeModel.disabled = false;
+			this.initialPartitionSizeModel.value = this.freeSpace;
+			this.controller.modelChanged(this.initialPartitionSizeModel);
+			this.initialPartitionSizeChanged({value: this.initialPartitionSizeModel.value});
+			this.initialPartitionSizeField.mojo.focus();
 		}
-		this.controller.modelChanged(this.initialPartitionNameModel);
-		this.initialPartitionSizeModel.disabled = false;
-		this.initialPartitionSizeModel.value = this.freeSpace;
-		this.controller.modelChanged(this.initialPartitionSizeModel);
-		this.initialPartitionSizeChanged({value: this.initialPartitionSizeModel.value});
-		this.initialPartitionSizeField.mojo.focus();
+		else {
+			this.targetActivity = "None Available";
+			this.selectTargetActivity(this.targetActivity);
+			return;
+		}
 	}
 	else if (this.targetActivity == "Delete Partition") {
 		this.deletePartitionGroup.style.display = '';
