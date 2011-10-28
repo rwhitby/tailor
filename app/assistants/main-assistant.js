@@ -883,7 +883,11 @@ MainAssistant.prototype.targetActivityChanged = function(event)
 		this.controller.modelChanged(this.deletePartitionButtonModel);
 	}
 
-	this.controller.getSceneScroller().mojo.revealElement.delay(1, this.statusGroup);
+	this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
+	if (Mojo.Environment.DeviceInfo.modelNameAscii.indexOf('TouchPad') == 0) {
+		// Do it again after a second due to the keyboard opening
+		this.controller.getSceneScroller().mojo.revealElement.delay(1, this.statusGroup);
+	}
 };
 
 MainAssistant.prototype.unmountPartitionTap = function(event)
@@ -1082,7 +1086,6 @@ MainAssistant.prototype.checkExt3fs = function(payload)
 	else if (payload.stdOut) {
 		this.status.innerHTML = payload.stdOut;
 		if (payload.stdOut.match(/.+ files .+ blocks/)) {
-			this.status.innerHTML = payload.stdOut;
 			var data = payload.stdOut.split(":", 2);
 			var matches = data[1].match(/[0-9.]+/g);
 			if (matches.length == 5) {
@@ -1331,7 +1334,6 @@ MainAssistant.prototype.resizePartitionTap = function(event)
 	var delta = this.partitionSize[this.targetPartition] - value;
 
 	if (delta > 0) {
-
 		this.status.innerHTML = ("Reducing filesystem to " + value + " MiB");
 		this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
 
@@ -1342,17 +1344,14 @@ MainAssistant.prototype.resizePartitionTap = function(event)
 			this.request = TailorService.resizeExt3fs(this.resizeFilesystemHandler,
 													  "/dev/store/"+this.targetPartition, value);
 		}
-
 	}
 	else if (delta < 0) {
-
 		this.status.innerHTML = ("Extending partition to " + value + " MiB");
 		this.controller.getSceneScroller().mojo.revealElement(this.statusGroup);
 
 		this.resizePartitionOverrideError = false;
 		this.request = TailorService.resizePartition(this.resizePartitionHandler,
 													 "/dev/store/"+this.targetPartition, value);
-
 	}
 	else {
 		this.status.innerHTML = "Unchanged at " + value + " MiB";
@@ -1360,7 +1359,6 @@ MainAssistant.prototype.resizePartitionTap = function(event)
 
 		this.resizePartitionButton.mojo.deactivate();
 	}
-
 };
 
 MainAssistant.prototype.resizePartition = function(payload)
@@ -1388,10 +1386,12 @@ MainAssistant.prototype.resizePartition = function(payload)
 	}
 
 	if (payload.stdErr) {
-		if (!payload.stdErr.match(/THIS MAY DESTROY YOUR DATA/) &&
+		if (!payload.stdErr.match(/WARNING: Reducing active logical volume to/) &&
+			!payload.stdErr.match(/THIS MAY DESTROY YOUR DATA/) &&
 			!payload.stdErr.match(/leaked on lvresize invocation/) &&
 			!payload.stdErr.match(/Run .* for more information/)) {
 			this.status.innerHTML = payload.stdErr;
+			// this.errorMessage(payload.stdErr);
 		}
 		if (payload.stdErr.match(/New size .* matches existing size/)) {
 			this.resizePartitionOverrideError = true;
@@ -1400,6 +1400,7 @@ MainAssistant.prototype.resizePartition = function(payload)
 	else if (payload.stdOut) {
 		if (!payload.stdOut.match(/Rounding up size to full physical extent/)) {
 			this.status.innerHTML = payload.stdOut;
+			// this.errorMessage(payload.stdOut);
 		}
 	}
 	
@@ -1453,10 +1454,17 @@ MainAssistant.prototype.resizeFilesystem = function(payload)
 	}
 
 	if (payload.stdErr) {
-		this.status.innerHTML = payload.stdErr;
+		if (!payload.stdErr.match(/resize2fs/)) {
+			this.status.innerHTML = payload.stdErr;
+			// this.errorMessage(payload.stdErr);
+		}
 	}
 	else if (payload.stdOut) {
-		this.status.innerHTML = payload.stdOut;
+		if (!payload.stdOut.match(/dosfsck/) &&
+			!payload.stdOut.match(/percent complete/)) {
+			this.status.innerHTML = payload.stdOut;
+			// this.errorMessage(payload.stdOut);
+		}
 	}
 	
 	if (payload.stage == "end") {
