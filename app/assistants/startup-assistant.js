@@ -11,7 +11,7 @@ function StartupAssistant(changelog)
     this.newMessages =
 	[
 	 // Don't forget the comma on all but the last entry
-	 { version: '0.3.0', log: [ 'Merged filesystem and partition resizing',
+	 { version: '0.3.0', log: [ 'Merged filesystem and partition resizing' ] },
 	 { version: '0.2.0', log: [ 'Added the ability to create and delete partitions',
 								'Added the ability to corrupt and repair filesystems' ] },
 	 { version: '0.1.0', log: [ 'Added the ability to resize partitions' ] },
