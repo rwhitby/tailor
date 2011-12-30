@@ -1,0 +1,49 @@
+Tool to resize the /media/internal partition to create room for additional partitions and create those partitions, add them to /etc/fstab and mount them.
+
+DEPENDENCIES: fatresizer, lvm-tools, ext2-tools
+
+WORKFLOW:
+
+put in size of partition you want to have "new" after reading sizes of things already.
+
+app then calculates what values to send to fatresize, lvcreate.
+
+app makes sure no other apps are running (foreground)
+
+app calls media_internal_resize script
+app calls create_new_partition script
+
+
+Media_internal-resize:
+
+pkill -SIGUSR1 cryptofs
+
+umount /media/internal
+
+resizefat -v /dev/mapper/store-media new_size
+
+lvreduce -L new_size /dev/mapper/store-media
+
+mount /media/internal
+
+pkill -SIGUSR2 cryptofs
+
+return
+
+
+create_new_partition:
+
+lvcreate -L Size --name ext3fs store
+
+mke2fs -j /dev/mapper/store-ext3fs
+
+tune2fs -i 0 /dev/mapper/store-ext3fs
+
+mkdir /media/ext3fs
+
+modify /etc/fstab
+
+mount
+
+return
+
