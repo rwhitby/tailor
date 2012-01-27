@@ -3,13 +3,13 @@
 # $1 is requested size of ext3fs partition
 # $2 is freespace
 
-REQUESTED_SIZE="$1"
+REQUESTED_SPACE="$1"
 FREESPACE="$2"
-FSTAB_ENTRY="/dev/mapper/store-ext2fs /media/ext3fs ext3  rw,noatime 0   0"
+FSTAB_ENTRY="/dev/mapper/store-ext3fs /media/ext3fs ext3  rw,noatime 0   0"
 
 
 if [ ${FREESPACE} > ${REQUESTED_SPACE} ]
-   lvcreate -L ${REQUESTED_SPACE}M --name ext3fs store
+   lvcreate -L ${REQUESTED_SPACE}M --name ext3fs-store
 else
    echo 'not enough space on device'
    exit 1
