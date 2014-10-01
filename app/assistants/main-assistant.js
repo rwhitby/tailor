@@ -106,7 +106,7 @@ function MainAssistant()
 		"cm-system":"Android (system)",
 		"cm-cache":"Android (cache)",
 		"cm-data":"Android (data)",
-		"luneos-root": "LuneOS"
+		"luneos-root": "LuneOS (root)"
 	};
 
 	this.mountNames = {
@@ -115,8 +115,8 @@ function MainAssistant()
 		"/dev/mapper/store-cm--system":"Android (system)",
 		"/dev/mapper/store-cm--cache":"Android (cache)",
 		"/dev/mapper/store-cm--data":"Android (data)",
-		"/dev/mapper/store-luneos--root":"LuneOS",
-		"/dev/store/luneos-root":"LuneOS"
+		"/dev/mapper/store-luneos--root":"LuneOS (root)",
+		"/dev/store/luneos-root":"LuneOS (root)"
 	};
 
 	this.partitionSize = false;
