@@ -25,5 +25,7 @@
 { "source": "UnmountExt3fs.js" },
 { "source": "MountExt3fs.js" },
 { "source": "UnmountOptware.js" },
-{ "source": "MountOptware.js" }
+{ "source": "MountOptware.js" },
+{ "source": "UnmountLuneOS.js" },
+{ "source": "MountLuneOS.js" }
 ]
