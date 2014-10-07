@@ -326,6 +326,28 @@ TailorService.mountOptware = function(callback)
     return request;
 };
 
+TailorService.unmountLuneOS = function(callback)
+{
+    var request = new Mojo.Service.Request(TailorService.identifier,
+	{
+	    method: 'unmountLuneOS',
+	    onSuccess: callback,
+	    onFailure: callback
+	});
+    return request;
+};
+
+TailorService.mountLuneOS = function(callback)
+{
+    var request = new Mojo.Service.Request(TailorService.identifier,
+	{
+	    method: 'mountLuneOS',
+	    onSuccess: callback,
+	    onFailure: callback
+	});
+    return request;
+};
+
 // Local Variables:
 // tab-width: 4
 // End:

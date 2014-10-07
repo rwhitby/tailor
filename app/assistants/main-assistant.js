@@ -97,7 +97,7 @@ function MainAssistant()
 	this.targetPartition = false;
 	this.targetActivity = false;
 
-	this.partitions = [ "media", "ext3fs", "cm-system", "cm-cache", "cm-data" ];
+	this.partitions = [ "media", "ext3fs", "cm-system", "cm-cache", "cm-data", "luneos-root" ];
 
 	this.partitionNames = {
 		"unused":"Unused Space",
@@ -106,6 +106,7 @@ function MainAssistant()
 		"cm-system":"Android (system)",
 		"cm-cache":"Android (cache)",
 		"cm-data":"Android (data)",
+		"luneos-root": "LuneOS (root)"
 	};
 
 	this.mountNames = {
@@ -114,6 +115,8 @@ function MainAssistant()
 		"/dev/mapper/store-cm--system":"Android (system)",
 		"/dev/mapper/store-cm--cache":"Android (cache)",
 		"/dev/mapper/store-cm--data":"Android (data)",
+		"/dev/mapper/store-luneos--root":"LuneOS (root)",
+		"/dev/store/luneos-root":"LuneOS (root)"
 	};
 
 	this.partitionSize = false;
@@ -136,6 +139,7 @@ function MainAssistant()
 		"cm-system" : false,
 		"cm-cache" : false,
 		"cm-data" : false,
+		"luneos-root": false
 	}
 
 };
@@ -356,6 +360,7 @@ MainAssistant.prototype.refresh = function(clearFilesystems)
 		"cm-system":"0",
 		"cm-cache":"0",
 		"cm-data":"0",
+		"luneos-root": 0
 	};
 	this.partitionMounts = {
 		"media":[],
@@ -363,11 +368,13 @@ MainAssistant.prototype.refresh = function(clearFilesystems)
 		"cm-system":[],
 		"cm-cache":[],
 		"cm-data":[],
+		"luneos-root":[]
 	};
 	this.mountPoints = {
 		"/media/internal": false,
 		"/media/ext3fs": false,
-		"/opt": false
+		"/opt": false,
+		"/media/luneos-root": false
 	};
 
 	if (clearFilesystems) {
@@ -377,6 +384,7 @@ MainAssistant.prototype.refresh = function(clearFilesystems)
 			"cm-system":false,
 			"cm-cache":false,
 			"cm-data":false,
+			"luneos-root":false
 		};
 		this.filesystemRepair = {
 			"media":false,
@@ -384,6 +392,7 @@ MainAssistant.prototype.refresh = function(clearFilesystems)
 			"cm-system":false,
 			"cm-cache":false,
 			"cm-data":false,
+			"luneos-root":false
 		};
 		this.filesystemSize = {
 			"media":false,
@@ -391,6 +400,7 @@ MainAssistant.prototype.refresh = function(clearFilesystems)
 			"cm-system":false,
 			"cm-cache":false,
 			"cm-data":false,
+			"luneos-root":false
 		};
 		this.filesystemUsed = {
 			"media":false,
@@ -398,6 +408,7 @@ MainAssistant.prototype.refresh = function(clearFilesystems)
 			"cm-system":false,
 			"cm-cache":false,
 			"cm-data":false,
+			"luneos-root":false
 		};
 		this.filesystemFree = {
 			"media":false,
@@ -405,6 +416,7 @@ MainAssistant.prototype.refresh = function(clearFilesystems)
 			"cm-system":false,
 			"cm-cache":false,
 			"cm-data":false,
+			"luneos-root":false
 		};
 	}
 
@@ -662,6 +674,9 @@ MainAssistant.prototype.listMounts = function(payload)
 					if ((mountSource == "/dev/mapper/store-ext3fs") && this.partitionSize["ext3fs"]) {
 						this.partitionMounts["ext3fs"].push(mountPoint);
 					}
+					if ((mountSource == "/dev/store/luneos-root" || mountSource == "/dev/mapper/store-luneos--root") && this.partitionSize["luneos-root"]) {
+						this.partitionMounts["luneos-root"].push(mountPoint);
+					}
 
 				}
 			}
@@ -915,6 +930,16 @@ MainAssistant.prototype.unmountPartitionTap = function(event)
 		}
 		else {
 			this.request = TailorService.unmountExt3fs(this.unmountPartitionHandler);
+		}
+		break;
+	case "luneos-root":
+		if (Mojo.Environment.DeviceInfo.modelNameAscii == 'Emulator') {
+			this.emulatorMountState["luneos-root"] = false;
+			this.unmountPartitionButton.mojo.deactivate();
+			this.refresh(true);
+		}
+		else {
+			this.request = TailorService.unmountLuneOS(this.unmountPartitionHandler);
 		}
 		break;
 	default:
@@ -1519,6 +1544,16 @@ MainAssistant.prototype.mountPartitionTap = function(event)
 			this.request = TailorService.mountExt3fs(this.mountPartitionHandler);
 		}
 		break;
+	case "luneos-root":
+		if (Mojo.Environment.DeviceInfo.modelNameAscii == 'Emulator') {
+			this.emulatorMountState["luneos-root"] = true;
+			this.mountPartitionButton.mojo.deactivate();
+			this.refresh(true);
+		}
+		else {
+			this.request = TailorService.mountLuneOS(this.mountPartitionHandler);
+		}
+		break;
 	default:
 		// Should never happen
 		this.mountPartitionButton.mojo.deactivate();
@@ -1749,6 +1784,9 @@ MainAssistant.prototype.mountTapped = function(event)
 	}
 	else if (mountPoint.indexOf("/opt") != -1) {
 		this.request = TailorService.unmountOptware(this.unmountedHandler);
+	}
+	else if (mountPoint.indexOf("/media/luneos-root") != -1) {
+		this.request = TailorService.unmountLuneOS(this.unmountedHandler);
 	}
 };
 

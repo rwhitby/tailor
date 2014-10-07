@@ -117,6 +117,14 @@
             "name": "mountOptware", 
             "assistant": "MountOptware",
 	    "public": true
+             }, {
+            "name": "unmountLuneOS",
+            "assistant": "UnmountLuneOS",
+	    "public": true
+             }, {
+            "name": "mountLuneOS",
+            "assistant": "MountLuneOS",
+	    "public": true
              }
            ]
         }]
